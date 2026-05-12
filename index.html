@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>令和8年度 採用査定システム｜慶生会</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+      background: #f4f6f9;
+      color: #333;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    .container { max-width: 760px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 32px; }
+    header h1 { font-size: 1.6rem; font-weight: 700; color: #1a5276; }
+    header p { color: #666; font-size: 0.9rem; margin-top: 6px; }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a5276;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #d6eaf8;
+    }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    select, input[type="number"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #fafafa;
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus, input[type="number"]:focus {
+      border-color: #2980b9;
+      background: #fff;
+    }
+
+    .checkboxes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .checkbox-item:hover { background: #eaf4fd; }
+
+    .checkbox-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin-top: 2px;
+      accent-color: #2980b9;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checkbox-item span { font-size: 0.88rem; line-height: 1.4; }
+    .checkbox-item .amount { font-size: 0.78rem; color: #2980b9; display: block; }
+
+    .transport-detail { display: none; margin-top: 16px; }
+    .transport-detail.active { display: block; }
+
+    .transport-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .info-box {
+      background: #eaf4fd;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: #1a5276;
+      margin-top: 10px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: #1a5276;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+      letter-spacing: 0.05em;
+    }
+
+    .btn:hover { background: #154360; }
+
+    .btn-reset {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 11px;
+      background: #fff;
+      color: #1a5276;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 2px solid #1a5276;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-reset:hover { background: #eaf4fd; }
+
+    #result { display: none; }
+
+    .result-total {
+      text-align: center;
+      padding: 24px 0 20px;
+    }
+
+    .result-total .label { font-size: 0.9rem; color: #666; margin-bottom: 8px; }
+    .result-total .amount { font-size: 2.6rem; font-weight: 800; color: #1a5276; }
+    .result-total .sub { font-size: 0.85rem; color: #888; margin-top: 4px; }
+
+    .breakdown {
+      border-top: 1px solid #eee;
+      margin-top: 20px;
+      padding-top: 16px;
+    }
+
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px dashed #eee;
+      font-size: 0.9rem;
+    }
+
+    .breakdown-row:last-child { border-bottom: none; }
+    .breakdown-row .key { color: #555; }
+    .breakdown-row .val { font-weight: 600; color: #222; }
+    .breakdown-row .val.plus { color: #1a8c4e; }
+    .breakdown-row .val.transport { color: #7d3c98; }
+    .breakdown-row .val.baseup { color: #c0392b; }
+    .breakdown-row.total-row { font-weight: 700; font-size: 1rem; }
+
+    .range-note {
+      background: #fef9e7;
+      border: 1px solid #f9e79f;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: #7d6608;
+      margin-top: 20px;
+      line-height: 1.6;
+    }
+
+    .hidden { display: none !important; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .btn, .btn-reset { display: none; }
+      .card { box-shadow: none; border: 1px solid #ddd; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>令和8年度 採用査定システム</h1>
+    <p>社会福祉法人 慶生会｜既卒正職員 月給査定</p>
+  </header>
+
+  <!-- ① 基本情報 -->
+  <div class="card">
+    <h2>① 基本情報</h2>
+
+    <div class="form-group">
+      <label for="jobType">職種</label>
+      <select id="jobType" onchange="onJobChange()">
+        <option value="">選択してください</option>
+        <optgroup label="直接処遇">
+          <option value="direct_nyusho">入所支援（191,100円）</option>
+          <option value="direct_tusho">日中支援（185,900円）</option>
+          <option value="direct_jido">児童（185,900円）</option>
+          <option value="junkangofu">准看護師（192,500円）</option>
+          <option value="kangofu">看護師（205,000円）</option>
+          <option value="rehab">リハビリ職・PT・OT・ST（200,000円）</option>
+          <option value="caremanager">介護支援専門員・ケアマネ（220,000円）</option>
+          <option value="service_manager">サービス管理責任者（228,000円）</option>
+          <option value="childdev_manager">児童発達支援管理責任者（230,000円）</option>
+          <option value="soudan_specialist">相談支援専門員（200,000円）</option>
+          <option value="soudan_general">相談支援（181,400円）</option>
+        </optgroup>
+        <optgroup label="間接処遇">
+          <option value="career">キャリア職（225,000円）</option>
+          <option value="jimu_general">一般事務（181,400円）</option>
+          <option value="jimu_keiri">経理事務（187,200円）</option>
+          <option value="kanrieiyoshi">管理栄養士（181,400円）</option>
+          <option value="eiyoshi">栄養士（181,400円）</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="education">学歴</label>
+      <select id="education">
+        <option value="highschool">高卒</option>
+        <option value="vocational">専門学校卒・短大卒</option>
+        <option value="university">大卒（4年制大学）</option>
+        <option value="graduate">大学院卒（修士以上）</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="expYears">他企業での同種職種 経験年数（上限10年）</label>
+      <input type="number" id="expYears" min="0" max="10" value="0" placeholder="0">
+    </div>
+
+    <div class="form-group">
+      <label for="totalExpYears">福祉業界 通算経験年数（10年以上加算ボーナス判定に使用）</label>
+      <input type="number" id="totalExpYears" min="0" max="40" value="0" placeholder="0">
+    </div>
+  </div>
+
+  <!-- ② 経験の詳細 -->
+  <div class="card">
+    <h2>② 経験の詳細</h2>
+    <div class="checkboxes">
+      <label class="checkbox-item">
+        <input type="checkbox" id="exp_hospital">
+        <span>病院・介護・保育・医療事務（相談）の経験あり<span class="amount">月+100円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" id="exp_shogai">
+        <span>障がい・発達支援（相談）の経験あり<span class="amount">月+100円</span></span>
+      </label>
+    </div>
+    <div class="form-group" style="margin-top: 16px;">
+      <label for="leaderBonus">リーダー経験 / 大規模法人経験</label>
+      <select id="leaderBonus">
+        <option value="0">なし（0円）</option>
+        <option value="300">リーダー経験あり（+300円）</option>
+        <option value="500">中規模法人リーダー（+500円）</option>
+        <option value="1000">300名以上・一部上場企業等（+1,000円）</option>
+      </select>
+      <div class="info-box">看護・リハビリ職の上限は700円です</div>
+    </div>
+  </div>
+
+  <!-- ③ 保有資格 -->
+  <div class="card">
+    <h2>③ 保有資格（該当するものすべて選択）</h2>
+    <div class="checkboxes">
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>介護福祉士<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>社会福祉士<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>精神保健福祉士<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>保育士<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>管理栄養士<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>准看護師（介護職兼務）<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>看護師免許<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>PT・OT・ST免許<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>教諭免許（特別支援含む）<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>実務者研修修了<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>日商簿記2級<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="10000">
+        <span>衛生管理者<span class="amount">月+10,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="5000">
+        <span>栄養士<span class="amount">月+5,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="3000">
+        <span>介護職員初任者研修<span class="amount">月+3,000円</span></span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" data-qual="3000">
+        <span>児童指導員任用資格<span class="amount">月+3,000円</span></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- ④ 各種手当 -->
+  <div class="card">
+    <h2>④ 各種手当</h2>
+
+    <div id="henso-section" class="form-group hidden">
+      <label for="hensokin">変則勤務手当（入所事業所）</label>
+      <select id="hensokin">
+        <option value="0">0円（なし）</option>
+        <option value="2000">2,000円</option>
+        <option value="3000">3,000円</option>
+        <option value="6000">6,000円</option>
+        <option value="9000">9,000円</option>
+        <option value="12000">12,000円</option>
+      </select>
+    </div>
+
+    <div id="sougei-section" class="form-group hidden">
+      <label for="sougei">送迎・業務手当（通所事業所）</label>
+      <select id="sougei">
+        <option value="0">0円（なし）</option>
+        <option value="3000">3,000円</option>
+        <option value="5000">5,000円</option>
+        <option value="7000">7,000円</option>
+        <option value="10000">10,000円（上限）</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>住居手当</label>
+      <label class="checkbox-item" style="display:flex;">
+        <input type="checkbox" id="jukyo_flag">
+        <span>支給予定あり（α円・上限15,000円）
+          <span style="font-size:0.78rem; color:#888; display:block;">賃貸物件・世帯主であること（家賃証明等必要）</span>
+        </span>
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label for="spouse">配偶者扶養義務</label>
+      <select id="spouse">
+        <option value="0">なし（0円）</option>
+        <option value="4000">あり（+4,000円）</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="childOver16">子供（16歳以上）の人数</label>
+      <input type="number" id="childOver16" min="0" max="10" value="0">
+      <div class="info-box">16歳以上：11,000円 × 人数</div>
+    </div>
+
+    <div class="form-group">
+      <label for="childUnder16">子供（16歳未満）の人数</label>
+      <input type="number" id="childUnder16" min="0" max="10" value="0">
+      <div class="info-box">16歳未満：5,000円 × 人数</div>
+    </div>
+  </div>
+
+  <!-- ⑤ 交通費 -->
+  <div class="card">
+    <h2>⑤ 交通費</h2>
+
+    <div class="form-group">
+      <label for="transportType">通勤手段</label>
+      <select id="transportType" onchange="onTransportChange()">
+        <option value="none">徒歩・自転車（交通費支給なし）</option>
+        <option value="transit">電車・バス</option>
+        <option value="car">車（距離区分）</option>
+        <option value="bike">バイク（車の半額）</option>
+      </select>
+    </div>
+
+    <div id="transport-transit" class="transport-detail">
+      <div class="transport-row">
+        <div class="form-group">
+          <label for="transitCost">月額実費（円）</label>
+          <input type="number" id="transitCost" min="0" max="100000" value="0" placeholder="例：8500">
+        </div>
+        <div class="form-group">
+          <label for="transitCap">支給上限</label>
+          <select id="transitCap">
+            <option value="15000">15,000円</option>
+            <option value="20000" selected>20,000円</option>
+            <option value="25000">25,000円</option>
+            <option value="30000">30,000円</option>
+            <option value="999999">上限なし（実費全額）</option>
+          </select>
+        </div>
+      </div>
+      <div class="info-box">支給額 ＝ 月額実費と上限の低い方</div>
+    </div>
+
+    <div id="transport-car" class="transport-detail">
+      <div class="form-group">
+        <label for="carDistance">通勤距離</label>
+        <select id="carDistance">
+          <option value="0">2km未満（支給なし）</option>
+          <option value="2100">2km〜（2,100円/月）</option>
+          <option value="4200">おおむね10km未満（4,200円/月）</option>
+          <option value="7100">10km〜15km未満（7,100円/月）</option>
+          <option value="12900">15km〜25km未満（12,900円/月）</option>
+          <option value="18700">25km〜35km未満（18,700円/月）</option>
+          <option value="24400">35km〜45km未満（24,400円/月）</option>
+          <option value="28000">45km〜55km未満（28,000円/月）</option>
+          <option value="31600">55km以上（31,600円/月）</option>
+        </select>
+      </div>
+      <div class="info-box" id="car-note">国税庁の非課税限度額基準で算出。バイクは上記の半額を支給。</div>
+    </div>
+  </div>
+
+  <button class="btn" onclick="calculate()">給与を算出する</button>
+
+  <!-- 結果エリア -->
+  <div class="card" id="result">
+    <h2>算出結果</h2>
+
+    <div class="result-total">
+      <div class="label">採用時 月給目安（総支給額）</div>
+      <div class="amount" id="totalAmount">¥0</div>
+      <div class="sub">月給／総支給額ベース</div>
+    </div>
+
+    <div class="breakdown">
+      <div class="breakdown-row">
+        <span class="key">基礎月給</span>
+        <span class="val" id="br-base">¥0</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="key">ベースアップ手当（自動適用）</span>
+        <span class="val baseup" id="br-baseup">+¥0</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="key">経験加算</span>
+        <span class="val plus" id="br-exp">+¥0</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="key">学歴調整</span>
+        <span class="val plus" id="br-edu">+¥0</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="key">資格手当</span>
+        <span class="val plus" id="br-qual">+¥0</span>
+      </div>
+      <div class="breakdown-row" id="br-henso-row">
+        <span class="key">変則勤務手当</span>
+        <span class="val plus" id="br-henso">+¥0</span>
+      </div>
+      <div class="breakdown-row" id="br-sougei-row">
+        <span class="key">送迎・業務手当</span>
+        <span class="val plus" id="br-sougei">+¥0</span>
+      </div>
+      <div class="breakdown-row" id="br-jukyo-row" style="display:none;">
+        <span class="key">住居手当</span>
+        <span class="val plus" id="br-jukyo" style="color:#2980b9;">α（上限15,000円）</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="key">扶養手当</span>
+        <span class="val plus" id="br-fuyo">+¥0</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="key">交通費</span>
+        <span class="val transport" id="br-transport">+¥0</span>
+      </div>
+      <div class="breakdown-row total-row">
+        <span class="key">合計（月給）</span>
+        <span class="val" id="br-total">¥0</span>
+      </div>
+      <div class="breakdown-row" id="br-yako-row" style="display:none;">
+        <span class="key" style="color:#999;">夜勤手当（参考）</span>
+        <span class="val" style="color:#999; font-size:0.85rem;">4,800円〜7,000円 × 夜勤日数</span>
+      </div>
+      <div class="breakdown-row" id="br-special-row" style="display:none;">
+        <span class="key" style="color:#999;">特別手当（参考）</span>
+        <span class="val" style="color:#999; font-size:0.85rem;">3,000円〜3,500円 × 日数（12/31〜1/2出勤・入所施設のみ）</span>
+      </div>
+    </div>
+
+    <div class="range-note" id="rangeNote"></div>
+
+    <button class="btn-reset" onclick="resetForm()">再計算する</button>
+    <button class="btn" style="margin-top:12px;" onclick="window.print()">印刷・PDF保存</button>
+  </div>
+
+</div>
+
+<script>
+  const BASE_SALARY = {
+    direct_nyusho:     191100,
+    direct_tusho:      185900,
+    direct_jido:       185900,
+    junkangofu:        192500,
+    kangofu:           205000,
+    rehab:             200000,
+    caremanager:       220000,
+    service_manager:   228000,
+    childdev_manager:  230000,
+    soudan_specialist: 200000,
+    soudan_general:    181400,
+    career:            225000,
+    jimu_general:      181400,
+    jimu_keiri:        187200,
+    kanrieiyoshi:      181400,
+    eiyoshi:           181400,
+  };
+
+  // ベースアップ手当区分
+  const JOB_CATEGORY = {
+    direct_nyusho: 'direct', direct_tusho: 'direct', direct_jido: 'direct',
+    junkangofu: 'direct',
+    kangofu: 'nursing_rehab', rehab: 'nursing_rehab', caremanager: 'nursing_rehab',
+    service_manager: 'nursing_rehab', childdev_manager: 'nursing_rehab',
+    soudan_specialist: 'nursing_rehab',
+    soudan_general: 'indirect', career: 'indirect', jimu_general: 'indirect',
+    jimu_keiri: 'indirect', kanrieiyoshi: 'indirect', eiyoshi: 'indirect',
+  };
+
+  const BASEUP = { direct: 19000, nursing_rehab: 10000, indirect: 8000 };
+
+  // 経験加算：月額 × 年数（同種他企業経験、上限10年）
+  const EXP_PER_YEAR = { direct: 100, nursing_rehab: 200, indirect: 100 };
+
+  // 10年以上ボーナス
+  const TEN_YEAR_BONUS = { direct: 300, nursing_rehab: 100, indirect: 100 };
+
+  function onJobChange() {
+    const job = document.getElementById('jobType').value;
+    const isNyusho = ['direct_nyusho', 'junkangofu'].includes(job);
+    const isTusho  = ['direct_tusho', 'direct_jido'].includes(job);
+    document.getElementById('henso-section').classList.toggle('hidden', !isNyusho);
+    document.getElementById('sougei-section').classList.toggle('hidden', !isTusho);
+  }
+
+  function onTransportChange() {
+    const val = document.getElementById('transportType').value;
+    document.getElementById('transport-transit').classList.toggle('active', val === 'transit');
+    const showCar = val === 'car' || val === 'bike';
+    document.getElementById('transport-car').classList.toggle('active', showCar);
+  }
+
+  function getEduBonus(edu) {
+    return { highschool: 0, vocational: 3000, university: 8000, graduate: 13000 }[edu] || 0;
+  }
+
+  function getTransportAmount() {
+    const type = document.getElementById('transportType').value;
+    if (type === 'transit') {
+      const cost = parseInt(document.getElementById('transitCost').value) || 0;
+      const cap  = parseInt(document.getElementById('transitCap').value) || 20000;
+      return Math.min(cost, cap);
+    }
+    if (type === 'car' || type === 'bike') {
+      const base = parseInt(document.getElementById('carDistance').value) || 0;
+      return type === 'bike' ? Math.floor(base / 2) : base;
+    }
+    return 0;
+  }
+
+  function fmt(n) { return '¥' + n.toLocaleString('ja-JP'); }
+
+  function calculate() {
+    const job = document.getElementById('jobType').value;
+    if (!job) { alert('職種を選択してください'); return; }
+
+    const cat       = JOB_CATEGORY[job];
+    const base      = BASE_SALARY[job];
+    const baseup    = BASEUP[cat];
+    const edu       = document.getElementById('education').value;
+    const expYears  = Math.min(parseInt(document.getElementById('expYears').value) || 0, 10);
+    const totalExp  = parseInt(document.getElementById('totalExpYears').value) || 0;
+
+    // 経験加算
+    const perYear   = EXP_PER_YEAR[cat];
+    let expBonus    = perYear * expYears;
+    if (totalExp >= 10) expBonus += TEN_YEAR_BONUS[cat];
+    if (document.getElementById('exp_hospital').checked) expBonus += 100;
+    if (document.getElementById('exp_shogai').checked)   expBonus += 100;
+    const rawLeader = parseInt(document.getElementById('leaderBonus').value) || 0;
+    // 看護・リハビリは上限700円
+    const leaderBonus = (cat === 'nursing_rehab') ? Math.min(rawLeader, 700) : rawLeader;
+    expBonus += leaderBonus;
+
+    const eduBonus = getEduBonus(edu);
+
+    // 資格手当
+    let qualBonus = 0;
+    document.querySelectorAll('[data-qual]:checked').forEach(cb => {
+      qualBonus += parseInt(cb.dataset.qual) || 0;
+    });
+
+    // 各種手当
+    const henso   = parseInt(document.getElementById('hensokin').value) || 0;
+    const sougei  = parseInt(document.getElementById('sougei').value) || 0;
+    const jukyoFlag = document.getElementById('jukyo_flag').checked;
+    const spouse  = parseInt(document.getElementById('spouse').value) || 0;
+    const childO  = (parseInt(document.getElementById('childOver16').value) || 0) * 11000;
+    const childU  = (parseInt(document.getElementById('childUnder16').value) || 0) * 5000;
+    const fuyo    = spouse + childO + childU;
+    const transport = getTransportAmount();
+
+    const total = base + baseup + expBonus + eduBonus + qualBonus
+                + henso + sougei + fuyo + transport;
+
+    const isNyusho = ['direct_nyusho', 'junkangofu', 'service_manager', 'childdev_manager'].includes(job);
+    const isTusho  = ['direct_tusho', 'direct_jido'].includes(job);
+
+    document.getElementById('br-base').textContent      = fmt(base);
+    document.getElementById('br-baseup').textContent    = '+' + fmt(baseup);
+    document.getElementById('br-exp').textContent       = '+' + fmt(expBonus);
+    document.getElementById('br-edu').textContent       = '+' + fmt(eduBonus);
+    document.getElementById('br-qual').textContent      = '+' + fmt(qualBonus);
+    document.getElementById('br-henso').textContent     = '+' + fmt(henso);
+    document.getElementById('br-sougei').textContent    = '+' + fmt(sougei);
+    document.getElementById('br-fuyo').textContent      = '+' + fmt(fuyo);
+    document.getElementById('br-transport').textContent = '+' + fmt(transport);
+    document.getElementById('br-jukyo-row').style.display = jukyoFlag ? '' : 'none';
+    document.getElementById('br-total').textContent     = fmt(total) + (jukyoFlag ? ' ＋ α' : '');
+    document.getElementById('totalAmount').textContent  = fmt(total) + (jukyoFlag ? ' ＋ α' : '');
+    document.getElementById('br-henso-row').style.display  = isNyusho ? '' : 'none';
+    document.getElementById('br-sougei-row').style.display = isTusho  ? '' : 'none';
+    document.getElementById('br-yako-row').style.display   = isNyusho ? '' : 'none';
+    document.getElementById('br-special-row').style.display = isNyusho ? '' : 'none';
+
+    const low  = fmt(Math.round(total * 0.95));
+    const high = fmt(Math.round(total * 1.08));
+    document.getElementById('rangeNote').innerHTML =
+      `<strong>提示レンジ目安：</strong>${low} 〜 ${high}<br>` +
+      `<span style="font-size:0.8rem;">※本人のスキル・面接評価・施設規模・加算状況により±5〜8%の調整を推奨します。</span>`;
+
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function resetForm() {
+    document.getElementById('result').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
