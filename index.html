@@ -407,15 +407,31 @@
     </div>
 
     <div class="form-group">
-      <label for="childOver16">子供（16歳以上）の人数</label>
+      <label for="childOver16">扶養親族（16歳以上・満22歳まで）の人数</label>
       <input type="number" id="childOver16" min="0" max="10" value="0">
-      <div class="info-box">16歳以上：11,000円 × 人数</div>
+      <div class="info-box">16歳以上：10,000円 × 人数</div>
     </div>
 
     <div class="form-group">
-      <label for="childUnder16">子供（16歳未満）の人数</label>
+      <label for="childUnder16">扶養親族（16歳未満）の人数</label>
       <input type="number" id="childUnder16" min="0" max="10" value="0">
       <div class="info-box">16歳未満：5,000円 × 人数</div>
+    </div>
+
+    <div class="form-group">
+      <label>配偶者なし職員の扶養親族（1名まで）</label>
+      <label class="checkbox-item" style="display:flex;">
+        <input type="checkbox" id="spouseless_dep">
+        <span>該当あり（+11,000円）
+          <span style="font-size:0.78rem; color:#888; display:block;">配偶者のいない職員の最初の扶養親族1名</span>
+        </span>
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label for="otherDep">その他扶養親族の人数</label>
+      <input type="number" id="otherDep" min="0" max="10" value="0">
+      <div class="info-box">その他：1,500円 × 人数</div>
     </div>
   </div>
 
@@ -457,18 +473,19 @@
       <div class="form-group">
         <label for="carDistance">通勤距離</label>
         <select id="carDistance">
-          <option value="0">2km未満（支給なし）</option>
-          <option value="2100">2km〜（2,100円/月）</option>
-          <option value="4200">おおむね10km未満（4,200円/月）</option>
-          <option value="7100">10km〜15km未満（7,100円/月）</option>
-          <option value="12900">15km〜25km未満（12,900円/月）</option>
-          <option value="18700">25km〜35km未満（18,700円/月）</option>
-          <option value="24400">35km〜45km未満（24,400円/月）</option>
-          <option value="28000">45km〜55km未満（28,000円/月）</option>
-          <option value="31600">55km以上（31,600円/月）</option>
+          <option value="0">片道2km未満（支給なし）</option>
+          <option value="2100">片道2km〜5km未満（2,100円/月）</option>
+          <option value="4200">片道5km〜10km未満（4,200円/月）</option>
+          <option value="7100">片道10km〜15km未満（7,100円/月）</option>
+          <option value="10000">片道15km〜20km未満（10,000円/月）</option>
+          <option value="12900">片道20km〜25km未満（12,900円/月）</option>
+          <option value="15800">片道25km〜30km未満（15,800円/月）</option>
+          <option value="18700">片道30km〜35km未満（18,700円/月）</option>
+          <option value="21500">片道35km〜40km未満（21,500円/月）</option>
+          <option value="24400">片道40km以上（24,400円/月）</option>
         </select>
       </div>
-      <div class="info-box" id="car-note">国税庁の非課税限度額基準で算出。バイクは上記の半額を支給。</div>
+      <div class="info-box" id="car-note">片道距離で選択してください。バイクは上記の半額を支給。</div>
     </div>
   </div>
 
@@ -655,10 +672,12 @@
     const henso   = parseInt(document.getElementById('hensokin').value) || 0;
     const sougei  = parseInt(document.getElementById('sougei').value) || 0;
     const jukyoFlag = document.getElementById('jukyo_flag').checked;
-    const spouse  = parseInt(document.getElementById('spouse').value) || 0;
-    const childO  = (parseInt(document.getElementById('childOver16').value) || 0) * 11000;
-    const childU  = (parseInt(document.getElementById('childUnder16').value) || 0) * 5000;
-    const fuyo    = spouse + childO + childU;
+    const spouse       = parseInt(document.getElementById('spouse').value) || 0;
+    const childO       = (parseInt(document.getElementById('childOver16').value) || 0) * 10000;
+    const childU       = (parseInt(document.getElementById('childUnder16').value) || 0) * 5000;
+    const spouselessDep = document.getElementById('spouseless_dep').checked ? 11000 : 0;
+    const otherDep     = (parseInt(document.getElementById('otherDep').value) || 0) * 1500;
+    const fuyo         = spouse + childO + childU + spouselessDep + otherDep;
     const transport = getTransportAmount();
 
     const total = base + baseup + expBonus + eduBonus + qualBonus
