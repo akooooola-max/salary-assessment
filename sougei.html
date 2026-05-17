@@ -448,6 +448,54 @@
     }
     .color-option.selected { border-color: #222; }
 
+    /* ── All-vehicles view ── */
+    .all-section { margin-bottom: 14px; }
+    .all-section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 8px 8px 0 0;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #fff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .all-section-empty {
+      background: #fff;
+      border-radius: 0 0 8px 8px;
+      border: 1px solid #eee;
+      border-top: none;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      color: #bbb;
+    }
+    .all-item {
+      background: #fff;
+      border-bottom: 1px solid #f4f4f4;
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 10px;
+    }
+    .all-item:last-child { border-bottom: none; border-radius: 0 0 8px 8px; }
+    .all-item-order {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .all-item-name { flex: 1; font-size: 0.88rem; font-weight: 600; }
+    .all-item-address { font-size: 0.72rem; color: #aaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+    .all-item-times { display: flex; gap: 8px; flex-shrink: 0; }
+    .all-time { text-align: center; }
+    .all-time-label { font-size: 0.6rem; color: #bbb; display: block; }
+    .all-time-val { font-size: 0.8rem; font-weight: 600; }
+    .all-time-val.actual { color: var(--success); }
+    .all-time-val.empty  { color: #ddd; }
+
     /* ── Print ── */
     @media print {
       .app-header .header-btn, .bottom-nav, .date-strip input[type="date"],
@@ -639,6 +687,12 @@
     <div class="modal-title" id="modal-add-title">利用者を追加</div>
     <p style="font-size:0.8rem;color:#888;margin-bottom:10px;">本日の送迎に追加する利用者を選択してください</p>
     <div class="user-select-list" id="user-select-list"></div>
+    <div id="also-return-wrap" style="margin-top:12px;padding:10px 12px;background:#f8f9fa;border-radius:8px;display:none;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--primary);">
+        <input type="checkbox" id="also-return" style="width:17px;height:17px;accent-color:var(--primary);">
+        <span id="also-return-label">帰り（午後）にも同じ利用者を追加する</span>
+      </label>
+    </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('modal-add-to-schedule')">キャンセル</button>
       <button class="btn-primary" onclick="addSelectedUsers()">追加</button>
@@ -788,15 +842,20 @@ function renderVehicleTabs() {
     container.innerHTML = '<span style="font-size:0.8rem;color:#aaa;padding:4px;">車両が未登録</span>';
     return;
   }
-  if (!curVehicle || !data.vehicles.find(v => v.id === curVehicle)) {
-    curVehicle = data.vehicles[0].id;
+  if (!curVehicle || (curVehicle !== 'all' && !data.vehicles.find(v => v.id === curVehicle))) {
+    curVehicle = 'all';
   }
-  container.innerHTML = data.vehicles.map(v => {
+  const allActive = curVehicle === 'all';
+  const allTab = `<button class="vehicle-tab"
+    style="border-color:#555;color:${allActive?'#fff':'#555'};background:${allActive?'#555':'#f4f6f9'};"
+    onclick="selectVehicle('all')">📋 全車両</button>`;
+  const vehicleTabs = data.vehicles.map(v => {
     const active = v.id === curVehicle;
     return `<button class="vehicle-tab"
       style="border-color:${v.color};color:${active?'#fff':v.color};background:${active?v.color:'#f4f6f9'};"
       onclick="selectVehicle('${v.id}')">${esc(v.name)}</button>`;
   }).join('');
+  container.innerHTML = allTab + vehicleTabs;
 }
 
 function selectVehicle(vid) {
@@ -809,6 +868,7 @@ function selectVehicle(vid) {
 // ── 車両情報バー（ドライバー・スタッフ＋欠席警告） ──
 function renderVehicleInfoBar() {
   const bar = document.getElementById('vehicle-info-bar');
+  if (curVehicle === 'all') { bar.innerHTML = ''; return; }
   const v = data.vehicles.find(v => v.id === curVehicle);
   if (!v) { bar.innerHTML = ''; return; }
 
@@ -838,6 +898,9 @@ function renderScheduleList() {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">🚗</div><p>「車両」タブから車両を登録してください</p></div>`;
     return;
   }
+
+  if (curVehicle === 'all') { renderAllVehicles(container); return; }
+
   const vehicle = data.vehicles.find(v => v.id === curVehicle);
   if (!vehicle) return;
 
@@ -845,16 +908,12 @@ function renderScheduleList() {
   const label = curPeriod === 'morning' ? 'お迎え' : 'お送り';
 
   let html = '';
-
-  // コピーボタン（リストが空の時）
   if (items.length === 0) {
     html += `<div style="padding:8px 12px 0;">
       <button class="copy-btn" onclick="copyFromOtherPeriod()">↕ ${curPeriod==='morning'?'午後（お送り）':'午前（お迎え）'}から利用者をコピー</button>
     </div>`;
   }
-
   html += '<div class="schedule-list">';
-
   if (items.length === 0) {
     html += `<div class="empty-state" style="padding:24px 0;"><div class="empty-icon">📋</div><p>${label}の利用者を追加してください</p></div>`;
   } else {
@@ -893,8 +952,62 @@ function renderScheduleList() {
         </div>`;
     });
   }
-
   html += `<button class="add-user-btn" onclick="openAddToSchedule()">＋ ${label}の利用者を追加</button></div>`;
+  container.innerHTML = html;
+}
+
+// ── 全車両まとめ表示 ──
+function renderAllVehicles(container) {
+  const label = curPeriod === 'morning' ? 'お迎え' : 'お送り';
+  let html = '<div style="padding:10px 12px;">';
+
+  data.vehicles.forEach(v => {
+    const k = curDate + '.' + curPeriod + '.' + v.id;
+    const items = data.schedules[k] || [];
+    const driver = data.staff.find(s => s.id === v.driverId);
+    const staff  = data.staff.find(s => s.id === v.staffId);
+    const driverWarn = isAbsent(v.driverId) ? ' ⚠️' : '';
+    const staffWarn  = isAbsent(v.staffId)  ? ' ⚠️' : '';
+    const crewParts = [];
+    if (driver) crewParts.push('Dr:' + esc(driver.name) + driverWarn);
+    if (staff)  crewParts.push('St:' + esc(staff.name)  + staffWarn);
+
+    html += `<div class="all-section">
+      <div class="all-section-header" style="background:${v.color};">
+        ${esc(v.name)}
+        ${crewParts.length ? '<span style="font-size:0.72rem;opacity:0.85;font-weight:normal;margin-left:8px;">' + crewParts.join('　') + '</span>' : ''}
+        <span style="margin-left:auto;font-size:0.75rem;font-weight:normal;opacity:0.85;">${items.length}名</span>
+      </div>`;
+
+    if (items.length === 0) {
+      html += `<div class="all-section-empty">${label}の登録なし</div>`;
+    } else {
+      items.forEach((item, idx) => {
+        const user = data.users.find(u => u.id === item.userId);
+        if (!user) return;
+        html += `<div class="all-item" style="border-left:3px solid ${v.color};">
+          <div class="all-item-order" style="background:${v.color};">${idx+1}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="all-item-name">${user.wheelchair?'♿ ':''}${esc(user.name)}</div>
+            <div class="all-item-address">${esc(user.address||'')}</div>
+          </div>
+          <div class="all-item-times">
+            <div class="all-time">
+              <span class="all-time-label">予定</span>
+              <span class="all-time-val">${item.scheduledTime||'--:--'}</span>
+            </div>
+            <div class="all-time">
+              <span class="all-time-label">実績</span>
+              <span class="all-time-val ${item.actualTime?'actual':'empty'}">${item.actualTime||'--:--'}</span>
+            </div>
+          </div>
+        </div>`;
+      });
+    }
+    html += '</div>';
+  });
+
+  html += '</div>';
   container.innerHTML = html;
 }
 
@@ -936,9 +1049,11 @@ function copyFromOtherPeriod() {
 
 // ── 利用者追加モーダル ──
 function openAddToSchedule() {
+  if (curVehicle === 'all') return;
   const existing = getItems().map(x => x.userId);
   const label = curPeriod === 'morning' ? '午前（お迎え）' : '午後（お送り）';
   document.getElementById('modal-add-title').textContent = label + ' 利用者を追加';
+
   const list = document.getElementById('user-select-list');
   if (data.users.length === 0) {
     list.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;">利用者が登録されていません</div>';
@@ -955,12 +1070,30 @@ function openAddToSchedule() {
       </label>`;
     }).join('');
   }
+
+  // 帰りも追加チェックボックス
+  const wrap = document.getElementById('also-return-wrap');
+  const labelEl = document.getElementById('also-return-label');
+  document.getElementById('also-return').checked = false;
+  wrap.style.display = 'block';
+  labelEl.textContent = curPeriod === 'morning'
+    ? '帰り（午後）にも同じ利用者を追加する'
+    : '行き（午前）にも同じ利用者を追加する';
+
   openModal('modal-add-to-schedule');
 }
 
 function addSelectedUsers() {
   const checked = document.querySelectorAll('#user-select-list input[type="checkbox"]:checked:not(:disabled)');
+  const alsoReturn = document.getElementById('also-return').checked;
+  const otherPeriod = curPeriod === 'morning' ? 'afternoon' : 'morning';
+
   const items = ensureItems();
+  const otherKey = curDate + '.' + otherPeriod + '.' + curVehicle;
+  if (alsoReturn && !data.schedules[otherKey]) data.schedules[otherKey] = [];
+  const otherItems = alsoReturn ? data.schedules[otherKey] : null;
+  const otherExistIds = otherItems ? otherItems.map(x => x.userId) : [];
+
   checked.forEach(cb => {
     const userId = cb.value;
     const user = data.users.find(u => u.id === userId);
@@ -970,6 +1103,13 @@ function addSelectedUsers() {
       scheduledTime: curPeriod === 'morning' ? (user.defaultPickupTime||'') : (user.defaultDropoffTime||''),
       actualTime: '', note: '',
     });
+    if (otherItems && !otherExistIds.includes(userId)) {
+      otherItems.push({
+        id: uid(), userId,
+        scheduledTime: otherPeriod === 'morning' ? (user.defaultPickupTime||'') : (user.defaultDropoffTime||''),
+        actualTime: '', note: '',
+      });
+    }
   });
   save(); closeModal('modal-add-to-schedule'); renderScheduleList();
 }
