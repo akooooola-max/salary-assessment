@@ -731,6 +731,55 @@
   </div>
 </div>
 
+<!-- ══ Modal: ルート最適化 ══ -->
+<div class="modal-overlay" id="modal-route">
+  <div class="modal">
+    <div class="modal-title">🗺️ ルート最適化</div>
+
+    <!-- 設定パネル -->
+    <div id="route-setup">
+      <div class="form-group">
+        <label>施設の住所</label>
+        <input type="text" id="facility-address" placeholder="例：大阪府大阪市○○区○○町1-1">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>出発時刻（施設を出る時間）</label>
+          <input type="time" id="route-depart">
+        </div>
+        <div class="form-group">
+          <label>施設着予定時刻</label>
+          <input type="time" id="route-arrive">
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:#888;line-height:1.5;">住所を地図で検索して近い順に並べ替えます。<br>インターネット接続が必要です（無料）。</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('modal-route')">キャンセル</button>
+        <button class="btn-primary" onclick="startRouteOptimize()">最適化を開始</button>
+      </div>
+    </div>
+
+    <!-- 進捗パネル -->
+    <div id="route-progress" style="display:none;text-align:center;padding:10px 0 20px;">
+      <div style="font-size:2.2rem;margin-bottom:10px;">🔍</div>
+      <div id="route-progress-text" style="font-size:0.88rem;color:#555;margin-bottom:14px;">準備中...</div>
+      <div style="background:#eee;border-radius:4px;height:8px;overflow:hidden;">
+        <div id="route-progress-bar" style="background:var(--primary);height:8px;width:0%;transition:width 0.4s;"></div>
+      </div>
+    </div>
+
+    <!-- 結果パネル -->
+    <div id="route-result" style="display:none;">
+      <p style="font-size:0.8rem;color:#666;margin-bottom:10px;">この順番に並べ替えます。確認して確定してください。</p>
+      <div id="route-result-list"></div>
+      <div class="modal-actions" style="margin-top:14px;">
+        <button class="btn-cancel" onclick="closeModal('modal-route')">キャンセル</button>
+        <button class="btn-primary" onclick="applyRoute()">この順番で確定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ================================================================
 // Constants
@@ -739,7 +788,7 @@ const STORAGE_KEY = 'sougei_v2';
 const COLORS = ['#2980b9','#27ae60','#8e44ad','#e67e22','#c0392b','#16a085','#2c3e50','#d35400'];
 
 function defaultData() {
-  return { vehicles: [], users: [], staff: [], absences: {}, schedules: {} };
+  return { vehicles: [], users: [], staff: [], absences: {}, schedules: {}, geocache: {}, settings: {} };
 }
 
 // ================================================================
@@ -961,6 +1010,9 @@ function renderScheduleList() {
           </div>
         </div>`;
     });
+  }
+  if (items.length >= 2) {
+    html += `<button class="add-user-btn" style="border-color:#27ae60;color:#27ae60;margin-bottom:6px;" onclick="openRouteOptimizer()">🗺️ ルートを最適化する</button>`;
   }
   html += `<button class="add-user-btn" onclick="openAddToSchedule()">＋ ${label}の利用者を追加</button></div>`;
   container.innerHTML = html;
@@ -1468,6 +1520,226 @@ function updateHeaderDate() {
   updateHeaderDate();
   renderSchedulePage();
 })();
+
+// ================================================================
+// Route Optimizer
+// ================================================================
+
+let optimizedRoute = null;
+
+function openRouteOptimizer() {
+  if (curVehicle === 'all') return;
+  const items = getItems();
+  if (items.length < 2) { alert('利用者が2名以上必要です'); return; }
+
+  document.getElementById('route-setup').style.display     = 'block';
+  document.getElementById('route-progress').style.display  = 'none';
+  document.getElementById('route-result').style.display    = 'none';
+
+  document.getElementById('facility-address').value = data.settings?.facilityAddress || '';
+  openModal('modal-route');
+}
+
+async function startRouteOptimize() {
+  const facilityAddr = document.getElementById('facility-address').value.trim();
+  const departTime   = document.getElementById('route-depart').value;
+  const arriveTime   = document.getElementById('route-arrive').value;
+
+  if (!facilityAddr) { alert('施設の住所を入力してください'); return; }
+  if (!departTime || !arriveTime) { alert('出発時刻と施設着時刻を入力してください'); return; }
+  if (timeToMinutes(arriveTime) <= timeToMinutes(departTime)) {
+    alert('施設着時刻は出発時刻より後にしてください'); return;
+  }
+
+  if (!data.settings) data.settings = {};
+  data.settings.facilityAddress = facilityAddr;
+  save();
+
+  document.getElementById('route-setup').style.display    = 'none';
+  document.getElementById('route-progress').style.display = 'block';
+
+  const items = getItems().filter(item => data.users.find(u => u.id === item.userId));
+  const total = items.length + 1;
+
+  // ── 施設を座標に変換 ──
+  setProgress('施設の住所を検索中...', 0);
+  const facilityCoords = await geocodeAddress(facilityAddr);
+  if (!facilityCoords) {
+    alert('施設の住所が見つかりませんでした。住所を確認してください。');
+    document.getElementById('route-setup').style.display    = 'block';
+    document.getElementById('route-progress').style.display = 'none';
+    return;
+  }
+
+  // ── 利用者住所を座標に変換 ──
+  const points = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const user = data.users.find(u => u.id === item.userId);
+    setProgress(`${esc(user?.name || '')} の住所を検索中... (${i+1}/${items.length})`,
+      Math.round((i + 1) / total * 80));
+    const coords = user?.address ? await geocodeAddress(user.address) : null;
+    if (i < items.length - 1) await sleep(1000); // Nominatim rate limit
+    points.push({ item, user, coords });
+  }
+
+  setProgress('最短ルートを計算中...', 90);
+  await sleep(200);
+
+  // ── TSP ──
+  const geocoded = points.filter(p => p.coords);
+  const failed   = points.filter(p => !p.coords);
+  const ordered  = nearestNeighborTSP(facilityCoords, geocoded);
+  const fullRoute = [...ordered, ...failed];
+
+  // ── 予定時刻を計算 ──
+  const totalMins = timeToMinutes(arriveTime) - timeToMinutes(departTime);
+  const times = calcScheduleTimes(facilityCoords, fullRoute, departTime, totalMins);
+  optimizedRoute = fullRoute.map((p, i) => ({ ...p, estimatedTime: times[i] }));
+
+  setProgress('完了', 100);
+  await sleep(300);
+  showRouteResult(departTime, arriveTime);
+}
+
+function setProgress(text, pct) {
+  document.getElementById('route-progress-text').textContent = text;
+  document.getElementById('route-progress-bar').style.width  = pct + '%';
+}
+
+function showRouteResult(departTime, arriveTime) {
+  document.getElementById('route-progress').style.display = 'none';
+  document.getElementById('route-result').style.display   = 'block';
+
+  const v = data.vehicles.find(v => v.id === curVehicle);
+  const color = v?.color || '#2980b9';
+
+  let html = `<div style="background:#f0f4f8;border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:0.8rem;">
+    🏢 施設 出発 <strong>${departTime}</strong>
+  </div>`;
+
+  optimizedRoute.forEach((p, i) => {
+    const ok = !!p.coords;
+    html += `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;
+                  border-radius:8px;margin-bottom:4px;border-left:3px solid ${ok?color:'#ccc'};">
+        <div style="width:22px;height:22px;border-radius:50%;background:${ok?color:'#bbb'};
+                    display:flex;align-items:center;justify-content:center;
+                    color:#fff;font-size:0.72rem;font-weight:700;flex-shrink:0;">${i+1}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:0.88rem;">
+            ${p.user?.wheelchair?'♿ ':''}${esc(p.user?.name||'')}
+          </div>
+          <div style="font-size:0.7rem;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            ${esc(p.user?.address||'住所未登録')}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:0.9rem;font-weight:700;${ok?'':'color:#ccc'}">${p.estimatedTime||'--:--'}</div>
+          ${!ok?'<div style="font-size:0.65rem;color:#e67e22;">⚠️住所未取得</div>':''}
+        </div>
+      </div>`;
+  });
+
+  html += `<div style="background:#f0f4f8;border-radius:8px;padding:9px 12px;margin-top:6px;font-size:0.8rem;">
+    🏢 施設 到着 <strong>${arriveTime}</strong>
+  </div>`;
+
+  document.getElementById('route-result-list').innerHTML = html;
+}
+
+function applyRoute() {
+  if (!optimizedRoute) return;
+  const k = schedKey();
+  const cur = data.schedules[k] || [];
+  data.schedules[k] = optimizedRoute.map(p => {
+    const existing = cur.find(x => x.id === p.item.id) || p.item;
+    return { ...existing, scheduledTime: p.estimatedTime || existing.scheduledTime };
+  });
+  save();
+  closeModal('modal-route');
+  renderScheduleList();
+}
+
+// ── Nominatim ジオコーディング ──
+async function geocodeAddress(address) {
+  if (!address?.trim()) return null;
+  if (!data.geocache) data.geocache = {};
+  if (data.geocache[address]) return data.geocache[address];
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?q='
+      + encodeURIComponent(address)
+      + '&format=json&limit=1&countrycodes=jp';
+    const res = await fetch(url, { headers: { 'User-Agent': 'DayServiceSougeiApp/1.0' } });
+    const json = await res.json();
+    if (!json.length) return null;
+    const coords = { lat: parseFloat(json[0].lat), lng: parseFloat(json[0].lon) };
+    data.geocache[address] = coords;
+    save();
+    return coords;
+  } catch { return null; }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Haversine 距離（km）──
+function haversine(a, b) {
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const s = Math.sin(dLat/2)**2
+    + Math.cos(a.lat*Math.PI/180) * Math.cos(b.lat*Math.PI/180) * Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+// ── 最近傍TSP ──
+function nearestNeighborTSP(start, points) {
+  if (!points.length) return [];
+  const rem = [...points];
+  const route = [];
+  let cur = start;
+  while (rem.length) {
+    let idx = 0, best = Infinity;
+    rem.forEach((p, i) => {
+      const d = haversine(cur, p.coords);
+      if (d < best) { best = d; idx = i; }
+    });
+    route.push(rem[idx]);
+    cur = rem[idx].coords;
+    rem.splice(idx, 1);
+  }
+  return route;
+}
+
+// ── 予定時刻を距離比で配分 ──
+function calcScheduleTimes(facilityCoords, route, departTime, totalMins) {
+  const distances = [];
+  let prev = facilityCoords;
+  route.forEach(p => {
+    distances.push(p.coords ? haversine(prev, p.coords) : 0);
+    if (p.coords) prev = p.coords;
+  });
+  const totalDist = distances.reduce((a, b) => a + b, 0);
+  const startMins = timeToMinutes(departTime);
+  let elapsed = 0;
+  return distances.map(d => {
+    elapsed += totalDist > 0
+      ? (d / totalDist) * totalMins
+      : totalMins / Math.max(route.length, 1);
+    return minutesToTime(startMins + Math.round(elapsed));
+  });
+}
+
+function timeToMinutes(t) {
+  const [h, m] = (t || '00:00').split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minutesToTime(m) {
+  const h = Math.floor((m % 1440) / 60);
+  const min = m % 60;
+  return String(h).padStart(2,'0') + ':' + String(min).padStart(2,'0');
+}
 </script>
 </body>
 </html>
