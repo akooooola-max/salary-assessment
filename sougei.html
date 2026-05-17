@@ -823,10 +823,14 @@ function renderAttendanceBar() {
   const bar = document.getElementById('attendance-bar');
   if (data.staff.length === 0) { bar.innerHTML = ''; return; }
   const abs = data.absences[curDate] || [];
+  // どのスタッフがどの車両のドライバーかを調べる
+  const driverIds = new Set(data.vehicles.map(v => v.driverId).filter(Boolean));
   bar.innerHTML = '<span class="attendance-label">出欠：</span>' +
     data.staff.map(s => {
-      const absent = abs.includes(s.id);
-      return `<button class="staff-chip ${absent ? 'absent' : 'present'}" onclick="toggleAbsence('${s.id}')">${absent ? '✕ ' : '✓ '}${esc(s.name)}</button>`;
+      const absent  = abs.includes(s.id);
+      const isDriver = driverIds.has(s.id);
+      const prefix  = isDriver ? '🚗 ' : '';
+      return `<button class="staff-chip ${absent ? 'absent' : 'present'}" onclick="toggleAbsence('${s.id}')">${absent ? '✕ ' : '✓ '}${prefix}${esc(s.name)}</button>`;
     }).join('');
 }
 
@@ -852,10 +856,14 @@ function renderVehicleTabs() {
     style="border-color:#555;color:${allActive?'#fff':'#555'};background:${allActive?'#555':'#f4f6f9'};"
     onclick="selectVehicle('all')">📋 全車両</button>`;
   const vehicleTabs = data.vehicles.map(v => {
-    const active = v.id === curVehicle;
+    const active       = v.id === curVehicle;
+    const driverAbsent = v.driverId && isAbsent(v.driverId);
+    const color  = driverAbsent ? '#e67e22' : v.color;
+    const bg     = active ? color : (driverAbsent ? '#fff8f0' : '#f4f6f9');
+    const warn   = driverAbsent ? ' ⚠️' : '';
     return `<button class="vehicle-tab"
-      style="border-color:${v.color};color:${active?'#fff':v.color};background:${active?v.color:'#f4f6f9'};"
-      onclick="selectVehicle('${v.id}')">${esc(v.name)}</button>`;
+      style="border-color:${color};color:${active?'#fff':color};background:${bg};"
+      onclick="selectVehicle('${v.id}')">${esc(v.name)}${warn}</button>`;
   }).join('');
   container.innerHTML = allTab + vehicleTabs;
 }
@@ -1269,10 +1277,21 @@ function openVehicleModal(vehicleId) {
   document.getElementById('vehicle-driver-new').value = '';
   document.getElementById('vehicle-staff-new').value  = '';
 
-  const staffOptions = '<option value="">未設定</option>' +
-    data.staff.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
-  document.getElementById('vehicle-driver').innerHTML = staffOptions;
-  document.getElementById('vehicle-staff').innerHTML  = staffOptions;
+  // 他の車両ですでに使われているスタッフIDを収集（今編集中の車両は除外）
+  const usedIds = new Set();
+  data.vehicles.forEach(v => {
+    if (v.id === vehicleId) return;
+    if (v.driverId) usedIds.add(v.driverId);
+    if (v.staffId)  usedIds.add(v.staffId);
+  });
+  const makeOptions = (currentId) => '<option value="">未設定</option>' +
+    data.staff.map(s => {
+      const used = usedIds.has(s.id) && s.id !== currentId;
+      return `<option value="${s.id}" ${used ? 'disabled' : ''}>${esc(s.name)}${used ? '（他車両に割当済）' : ''}</option>`;
+    }).join('');
+  const curV = vehicleId ? data.vehicles.find(v => v.id === vehicleId) : null;
+  document.getElementById('vehicle-driver').innerHTML = makeOptions(curV?.driverId || '');
+  document.getElementById('vehicle-staff').innerHTML  = makeOptions(curV?.staffId  || '');
   document.getElementById('vehicle-driver').style.display = noStaff ? 'none' : '';
   document.getElementById('vehicle-staff').style.display  = noStaff ? 'none' : '';
 
