@@ -1126,22 +1126,35 @@ function copyFromOtherPeriod() {
 // ── 利用者追加モーダル ──
 function openAddToSchedule() {
   if (curVehicle === 'all') return;
-  const existing = getItems().map(x => x.userId);
   const label = curPeriod === 'morning' ? '午前（お迎え）' : '午後（お送り）';
   document.getElementById('modal-add-title').textContent = label + ' 利用者を追加';
+
+  // 同じ日・同じ便の全車両に登録済みのユーザーを収集（どの車両かも記録）
+  const usedInVehicle = {}; // userId → vehicle
+  data.vehicles.forEach(v => {
+    const k = curDate + '.' + curPeriod + '.' + v.id;
+    (data.schedules[k] || []).forEach(item => {
+      usedInVehicle[item.userId] = v;
+    });
+  });
 
   const list = document.getElementById('user-select-list');
   if (data.users.length === 0) {
     list.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;">利用者が登録されていません</div>';
   } else {
     list.innerHTML = data.users.map(u => {
-      const inList = existing.includes(u.id);
-      const veh = data.vehicles.find(v => v.id === u.defaultVehicle);
-      return `<label class="user-select-item">
-        <input type="checkbox" value="${u.id}" ${inList?'checked disabled':''}>
+      const assignedVehicle = usedInVehicle[u.id];
+      const inThisVehicle   = assignedVehicle?.id === curVehicle;
+      const inOtherVehicle  = assignedVehicle && !inThisVehicle;
+      const disabled = inThisVehicle || inOtherVehicle;
+      let badge = '';
+      if (inThisVehicle)  badge = '<span style="color:#aaa;font-size:0.7rem;">（この車両に追加済）</span>';
+      if (inOtherVehicle) badge = `<span style="color:#e67e22;font-size:0.7rem;">⚠️ ${esc(assignedVehicle.name)}に登録済</span>`;
+      return `<label class="user-select-item" style="${inOtherVehicle?'opacity:0.6;':''}">
+        <input type="checkbox" value="${u.id}" ${disabled?'checked disabled':''}>
         <div>
-          <div class="user-select-name">${u.wheelchair?'♿ ':''}${esc(u.name)}${inList?' <span style="color:#aaa;font-size:0.7rem;">（追加済）</span>':''}</div>
-          <div class="user-select-sub">${esc(u.address||'')}${veh?'　'+esc(veh.name):''}</div>
+          <div class="user-select-name">${u.wheelchair?'♿ ':''}${esc(u.name)} ${badge}</div>
+          <div class="user-select-sub">${esc(u.address||'')}</div>
         </div>
       </label>`;
     }).join('');
