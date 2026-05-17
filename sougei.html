@@ -644,14 +644,19 @@
       <div class="color-options" id="color-options"></div>
       <input type="hidden" id="vehicle-color" value="#2980b9">
     </div>
+    <div id="staff-notice" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:8px 12px;font-size:0.8rem;color:#7a6000;margin-bottom:10px;">
+      👤 スタッフが未登録です。下の欄に名前を入力するか、先に「スタッフ」タブで登録してください。
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label>ドライバー</label>
         <select id="vehicle-driver"><option value="">未設定</option></select>
+        <input type="text" id="vehicle-driver-new" placeholder="新規：名前を入力" style="margin-top:6px;width:100%;padding:8px 10px;border:1px dashed #aaa;border-radius:7px;font-size:0.85rem;display:none;">
       </div>
       <div class="form-group">
         <label>同乗スタッフ</label>
         <select id="vehicle-staff"><option value="">未設定</option></select>
+        <input type="text" id="vehicle-staff-new" placeholder="新規：名前を入力" style="margin-top:6px;width:100%;padding:8px 10px;border:1px dashed #aaa;border-radius:7px;font-size:0.85rem;display:none;">
       </div>
     </div>
     <div class="form-group">
@@ -838,10 +843,7 @@ function toggleAbsence(staffId) {
 // ── 車両タブ ──
 function renderVehicleTabs() {
   const container = document.getElementById('vehicle-tabs');
-  if (data.vehicles.length === 0) {
-    container.innerHTML = '<span style="font-size:0.8rem;color:#aaa;padding:4px;">車両が未登録</span>';
-    return;
-  }
+  // 全車両タブは常に表示
   if (!curVehicle || (curVehicle !== 'all' && !data.vehicles.find(v => v.id === curVehicle))) {
     curVehicle = 'all';
   }
@@ -1260,10 +1262,19 @@ function renderVehiclesPage() {
 }
 
 function openVehicleModal(vehicleId) {
+  const noStaff = data.staff.length === 0;
+  document.getElementById('staff-notice').style.display = noStaff ? 'block' : 'none';
+  document.getElementById('vehicle-driver-new').style.display = noStaff ? 'block' : 'none';
+  document.getElementById('vehicle-staff-new').style.display  = noStaff ? 'block' : 'none';
+  document.getElementById('vehicle-driver-new').value = '';
+  document.getElementById('vehicle-staff-new').value  = '';
+
   const staffOptions = '<option value="">未設定</option>' +
     data.staff.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
   document.getElementById('vehicle-driver').innerHTML = staffOptions;
   document.getElementById('vehicle-staff').innerHTML  = staffOptions;
+  document.getElementById('vehicle-driver').style.display = noStaff ? 'none' : '';
+  document.getElementById('vehicle-staff').style.display  = noStaff ? 'none' : '';
 
   const currentColor = vehicleId
     ? (data.vehicles.find(v => v.id === vehicleId)?.color || COLORS[0])
@@ -1304,11 +1315,25 @@ function saveVehicle() {
   const name = document.getElementById('vehicle-name').value.trim();
   if (!name) { alert('車両名を入力してください'); return; }
   const vehicleId = document.getElementById('edit-vehicle-id').value;
+
+  // スタッフ未登録時の新規入力を自動登録
+  function resolveStaff(selectId, inputId) {
+    const newName = document.getElementById(inputId).value.trim();
+    if (newName) {
+      const existing = data.staff.find(s => s.name === newName);
+      if (existing) return existing.id;
+      const s = { id: uid(), name: newName };
+      data.staff.push(s);
+      return s.id;
+    }
+    return document.getElementById(selectId).value || '';
+  }
+
   const v = {
     id: vehicleId || uid(), name,
     color:    document.getElementById('vehicle-color').value  || COLORS[0],
-    driverId: document.getElementById('vehicle-driver').value || '',
-    staffId:  document.getElementById('vehicle-staff').value  || '',
+    driverId: resolveStaff('vehicle-driver', 'vehicle-driver-new'),
+    staffId:  resolveStaff('vehicle-staff',  'vehicle-staff-new'),
     note:     document.getElementById('vehicle-note').value.trim(),
   };
   if (vehicleId) {
