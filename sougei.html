@@ -865,7 +865,27 @@ function setPeriod(p) {
   curPeriod = p;
   document.getElementById('btn-morning').classList.toggle('active', p === 'morning');
   document.getElementById('btn-afternoon').classList.toggle('active', p === 'afternoon');
+  applyPeriodTheme(p);
   renderScheduleList();
+}
+
+function applyPeriodTheme(p) {
+  const root = document.documentElement;
+  if (p === 'afternoon') {
+    root.style.setProperty('--primary',       '#7d4a00');
+    root.style.setProperty('--primary-light',  '#fdebd0');
+    document.body.style.background            = '#fdf3e7';
+    document.querySelector('.app-header').style.background = '#e67e22';
+    document.querySelector('.date-strip').style.borderBottomColor = '#f0c080';
+    document.querySelector('.period-toggle').style.borderColor    = '#e67e22';
+  } else {
+    root.style.setProperty('--primary',       '#1a5276');
+    root.style.setProperty('--primary-light',  '#d6eaf8');
+    document.body.style.background            = '#f0f4f8';
+    document.querySelector('.app-header').style.background = '#1a5276';
+    document.querySelector('.date-strip').style.borderBottomColor = '#e0e0e0';
+    document.querySelector('.period-toggle').style.borderColor    = '#1a5276';
+  }
 }
 
 function schedKey() { return curDate + '.' + curPeriod + '.' + curVehicle; }
@@ -1609,6 +1629,7 @@ function updateHeaderDate() {
 (function init() {
   document.getElementById('date-picker').value = curDate;
   updateHeaderDate();
+  applyPeriodTheme(curPeriod);
   renderSchedulePage();
 })();
 
