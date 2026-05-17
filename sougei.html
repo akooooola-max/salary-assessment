@@ -119,31 +119,45 @@
     .period-btn.active { background: var(--primary); color: #fff; }
 
     /* ── Attendance bar ── */
+    /* ── Attendance list ── */
     .attendance-bar {
-      background: #f8f9fa;
+      background: #fff;
       border-bottom: 1px solid #e8e8e8;
-      padding: 6px 12px;
+    }
+    .attendance-header {
       display: flex;
       align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .attendance-label { font-size: 0.72rem; color: #888; white-space: nowrap; }
-    .staff-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      padding: 3px 9px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
+      justify-content: space-between;
+      padding: 7px 14px;
       cursor: pointer;
-      border: none;
-      transition: all 0.15s;
       user-select: none;
     }
-    .staff-chip.present { background: #d5f5e3; color: #1a8c4e; }
-    .staff-chip.absent  { background: #fde8e8; color: var(--danger); text-decoration: line-through; opacity: 0.8; }
+    .attendance-header-left { font-size: 0.8rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 6px; }
+    .attendance-toggle-icon { font-size: 0.7rem; color: #aaa; }
+    .attendance-list { display: none; border-top: 1px solid #f0f0f0; }
+    .attendance-list.open { display: block; }
+    .attendance-row {
+      display: flex;
+      align-items: center;
+      padding: 8px 14px;
+      border-bottom: 1px solid #f8f8f8;
+      gap: 10px;
+    }
+    .attendance-row:last-child { border-bottom: none; }
+    .attendance-name { flex: 1; font-size: 0.88rem; font-weight: 600; }
+    .attendance-role { font-size: 0.7rem; color: #aaa; margin-top: 1px; }
+    .absence-btn {
+      border: none;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .absence-btn.present { background: #eaf7ef; color: #1a8c4e; }
+    .absence-btn.absent  { background: #fde8e8; color: var(--danger); }
 
     /* ── Vehicle tabs ── */
     .vehicle-tabs {
@@ -530,7 +544,15 @@
       <button class="period-btn"        id="btn-afternoon" onclick="setPeriod('afternoon')">午後（お送り）</button>
     </div>
   </div>
-  <div class="attendance-bar" id="attendance-bar"></div>
+  <div class="attendance-bar" id="attendance-bar">
+    <div class="attendance-header" onclick="toggleAttendanceList()">
+      <span class="attendance-header-left">
+        <span id="attendance-summary"></span>
+      </span>
+      <span class="attendance-toggle-icon" id="attendance-toggle-icon">▼</span>
+    </div>
+    <div class="attendance-list" id="attendance-list"></div>
+  </div>
   <div class="vehicle-tabs" id="vehicle-tabs"></div>
   <div class="vehicle-info-bar" id="vehicle-info-bar"></div>
   <div id="schedule-list-container"></div>
@@ -867,20 +889,62 @@ function renderSchedulePage() {
   renderScheduleList();
 }
 
-// ── 出欠バー ──
+// ── 出欠リスト ──
+let attendanceOpen = false;
+
+function toggleAttendanceList() {
+  attendanceOpen = !attendanceOpen;
+  document.getElementById('attendance-list').classList.toggle('open', attendanceOpen);
+  document.getElementById('attendance-toggle-icon').textContent = attendanceOpen ? '▲' : '▼';
+}
+
 function renderAttendanceBar() {
-  const bar = document.getElementById('attendance-bar');
-  if (data.staff.length === 0) { bar.innerHTML = ''; return; }
-  const abs = data.absences[curDate] || [];
-  // どのスタッフがどの車両のドライバーかを調べる
+  if (data.staff.length === 0) {
+    document.getElementById('attendance-bar').style.display = 'none';
+    return;
+  }
+  document.getElementById('attendance-bar').style.display = '';
+
+  const abs       = data.absences[curDate] || [];
   const driverIds = new Set(data.vehicles.map(v => v.driverId).filter(Boolean));
-  bar.innerHTML = '<span class="attendance-label">出欠：</span>' +
-    data.staff.map(s => {
-      const absent  = abs.includes(s.id);
-      const isDriver = driverIds.has(s.id);
-      const prefix  = isDriver ? '🚗 ' : '';
-      return `<button class="staff-chip ${absent ? 'absent' : 'present'}" onclick="toggleAbsence('${s.id}')">${absent ? '✕ ' : '✓ '}${prefix}${esc(s.name)}</button>`;
-    }).join('');
+  const staffIds  = new Set(data.vehicles.map(v => v.staffId).filter(Boolean));
+  const absentCount = data.staff.filter(s => abs.includes(s.id)).length;
+
+  // サマリー（ヘッダー）
+  const summaryEl = document.getElementById('attendance-summary');
+  if (absentCount === 0) {
+    summaryEl.innerHTML = '👥 出欠　<span style="color:#1a8c4e;font-size:0.78rem;">全員出勤</span>';
+  } else {
+    const names = data.staff.filter(s => abs.includes(s.id)).map(s => esc(s.name)).join('・');
+    summaryEl.innerHTML = `👥 出欠　<span style="color:var(--danger);font-size:0.78rem;">🌙 休み：${names}</span>`;
+  }
+
+  // リスト
+  document.getElementById('attendance-list').innerHTML = data.staff.map(s => {
+    const absent   = abs.includes(s.id);
+    const isDriver = driverIds.has(s.id);
+    const isStaff  = staffIds.has(s.id);
+    const roleVeh  = data.vehicles.find(v => v.driverId === s.id || v.staffId === s.id);
+    const roleLabel = isDriver
+      ? `🚗 ドライバー（${esc(roleVeh?.name || '')}）`
+      : isStaff
+        ? `👤 スタッフ（${esc(roleVeh?.name || '')}）`
+        : '未配車';
+    return `
+      <div class="attendance-row">
+        <div>
+          <div class="attendance-name" style="${absent ? 'text-decoration:line-through;color:#aaa;' : ''}">${esc(s.name)}</div>
+          <div class="attendance-role">${roleLabel}</div>
+        </div>
+        <button class="absence-btn ${absent ? 'absent' : 'present'}" onclick="toggleAbsence('${s.id}')">
+          ${absent ? '🌙 休み' : '　出勤　'}
+        </button>
+      </div>`;
+  }).join('');
+
+  // リストの開閉状態を維持
+  document.getElementById('attendance-list').classList.toggle('open', attendanceOpen);
+  document.getElementById('attendance-toggle-icon').textContent = attendanceOpen ? '▲' : '▼';
 }
 
 function toggleAbsence(staffId) {
