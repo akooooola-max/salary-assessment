@@ -872,12 +872,12 @@ function setPeriod(p) {
 function applyPeriodTheme(p) {
   const root = document.documentElement;
   if (p === 'afternoon') {
-    root.style.setProperty('--primary',       '#a0396a');
+    root.style.setProperty('--primary',       '#b5547a');
     root.style.setProperty('--primary-light',  '#fce4ec');
-    document.body.style.background            = '#fdf0f4';
-    document.querySelector('.app-header').style.background = '#c2185b';
-    document.querySelector('.date-strip').style.borderBottomColor = '#f8bbd0';
-    document.querySelector('.period-toggle').style.borderColor    = '#c2185b';
+    document.body.style.background            = '#fef5f8';
+    document.querySelector('.app-header').style.background = '#f48fb1';
+    document.querySelector('.date-strip').style.borderBottomColor = '#f8d7e5';
+    document.querySelector('.period-toggle').style.borderColor    = '#f48fb1';
   } else {
     root.style.setProperty('--primary',       '#1a5276');
     root.style.setProperty('--primary-light',  '#d6eaf8');
@@ -986,27 +986,32 @@ function renderVehicleTabs() {
   }
   const allActive = curVehicle === 'all';
   const allTab = `<button class="vehicle-tab"
-    style="border-color:#555;color:${allActive?'#fff':'#555'};background:${allActive?'#555':'#f4f6f9'};"
+    style="border:2px solid #888;color:${allActive?'#444':'#888'};background:${allActive?'#e8e8e8':'#f4f6f9'};"
     onclick="selectVehicle('all')">📋 全車両</button>`;
   const vehicleTabs = data.vehicles.map(v => {
     const active       = v.id === curVehicle;
     const driver       = data.staff.find(s => s.id === v.driverId);
     const driverAbsent = v.driverId && isAbsent(v.driverId);
     const color = driverAbsent ? '#c0392b' : v.color;
-    const bg    = active ? color : (driverAbsent ? '#fdecea' : '#f4f6f9');
+    // active: light tint background (hex color + "22" for ~14% opacity feel via white mix), border + text in color
+    // inactive: white/light gray
+    const activeBg = driverAbsent ? '#fdecea' : (v.color + '22');
+    const bg    = active ? activeBg : (driverAbsent ? '#fff5f5' : '#f4f6f9');
+    const textColor = active ? color : (driverAbsent ? '#c0392b' : '#555');
+    const borderWidth = active ? '2.5px' : '1.5px';
 
     // ドライバー名の表示（欠勤なら「欠勤」ラベル）
     let driverLine = '';
     if (driver) {
       driverLine = driverAbsent
-        ? `<div style="font-size:0.62rem;font-weight:700;margin-top:1px;opacity:0.95;">⚠️ ${esc(driver.name)} 欠勤</div>`
-        : `<div style="font-size:0.62rem;margin-top:1px;opacity:0.8;">🚗 ${esc(driver.name)}</div>`;
+        ? `<div style="font-size:0.62rem;font-weight:700;margin-top:1px;color:#c0392b;">⚠️ ${esc(driver.name)} 欠勤</div>`
+        : `<div style="font-size:0.62rem;margin-top:1px;color:#888;">🚗 ${esc(driver.name)}</div>`;
     } else {
-      driverLine = `<div style="font-size:0.62rem;margin-top:1px;opacity:0.55;">Dr: 未設定</div>`;
+      driverLine = `<div style="font-size:0.62rem;margin-top:1px;color:#bbb;">Dr: 未設定</div>`;
     }
 
     return `<button class="vehicle-tab"
-      style="border-color:${color};color:${active?'#fff':color};background:${bg};padding:5px 12px;line-height:1.2;text-align:left;"
+      style="border:${borderWidth} solid ${color};color:${textColor};background:${bg};padding:5px 12px;line-height:1.2;text-align:left;"
       onclick="selectVehicle('${v.id}')">
         <div style="font-weight:700;">${esc(v.name)}</div>
         ${driverLine}
