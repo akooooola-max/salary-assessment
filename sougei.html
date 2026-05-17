@@ -986,32 +986,31 @@ function renderVehicleTabs() {
   }
   const allActive = curVehicle === 'all';
   const allTab = `<button class="vehicle-tab"
-    style="border:2px solid #888;color:${allActive?'#444':'#888'};background:${allActive?'#e8e8e8':'#f4f6f9'};"
+    style="border:1px solid #ddd;border-left:${allActive?'4px solid #aaa':'1px solid #ddd'};background:${allActive?'#fff':'#f7f7f7'};color:#444;"
     onclick="selectVehicle('all')">📋 全車両</button>`;
   const vehicleTabs = data.vehicles.map(v => {
     const active       = v.id === curVehicle;
     const driver       = data.staff.find(s => s.id === v.driverId);
     const driverAbsent = v.driverId && isAbsent(v.driverId);
-    const color = driverAbsent ? '#c0392b' : v.color;
-    // active: light tint background (hex color + "22" for ~14% opacity feel via white mix), border + text in color
-    // inactive: white/light gray
-    const activeBg = driverAbsent ? '#fdecea' : (v.color + '22');
-    const bg    = active ? activeBg : (driverAbsent ? '#fff5f5' : '#f4f6f9');
-    const textColor = active ? color : (driverAbsent ? '#c0392b' : '#555');
-    const borderWidth = active ? '2.5px' : '1.5px';
+    const accentColor  = driverAbsent ? '#e57373' : v.color;
+    // active: white background + thick left border in vehicle color
+    // inactive: very light gray, thin border
+    const bg          = active ? '#fff' : (driverAbsent ? '#fff8f8' : '#f7f7f7');
+    const borderLeft  = active ? `4px solid ${accentColor}` : `1px solid #e0e0e0`;
+    const border      = `1px solid #e0e0e0`;
 
     // ドライバー名の表示（欠勤なら「欠勤」ラベル）
     let driverLine = '';
     if (driver) {
       driverLine = driverAbsent
-        ? `<div style="font-size:0.62rem;font-weight:700;margin-top:1px;color:#c0392b;">⚠️ ${esc(driver.name)} 欠勤</div>`
-        : `<div style="font-size:0.62rem;margin-top:1px;color:#888;">🚗 ${esc(driver.name)}</div>`;
+        ? `<div style="font-size:0.62rem;font-weight:600;margin-top:1px;color:#e57373;">⚠️ ${esc(driver.name)} 欠勤</div>`
+        : `<div style="font-size:0.62rem;margin-top:1px;color:#aaa;">🚗 ${esc(driver.name)}</div>`;
     } else {
-      driverLine = `<div style="font-size:0.62rem;margin-top:1px;color:#bbb;">Dr: 未設定</div>`;
+      driverLine = `<div style="font-size:0.62rem;margin-top:1px;color:#ccc;">Dr: 未設定</div>`;
     }
 
     return `<button class="vehicle-tab"
-      style="border:${borderWidth} solid ${color};color:${textColor};background:${bg};padding:5px 12px;line-height:1.2;text-align:left;"
+      style="border:${border};border-left:${borderLeft};background:${bg};color:#333;padding:5px 12px;line-height:1.2;text-align:left;"
       onclick="selectVehicle('${v.id}')">
         <div style="font-weight:700;">${esc(v.name)}</div>
         ${driverLine}
