@@ -523,6 +523,12 @@
         <input type="time" id="user-default-dropoff">
       </div>
     </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.88rem;">
+        <input type="checkbox" id="user-wheelchair" style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer;">
+        ♿ 車椅子の方
+      </label>
+    </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('modal-user')">キャンセル</button>
       <button class="btn-primary" onclick="saveUser()">保存</button>
@@ -769,7 +775,9 @@ function renderScheduleList() {
           <div class="item-header">
             <div class="order-badge" style="background:${vehicle.color};">${idx + 1}</div>
             <div class="item-info">
-              <div class="item-name">${esc(user.name)}</div>
+              <div class="item-name">
+                ${user.wheelchair ? '<span title="車椅子">♿</span> ' : ''}${esc(user.name)}
+              </div>
               <div class="item-address">${esc(user.address || '住所未登録')}</div>
             </div>
             <div class="item-times">
@@ -863,7 +871,7 @@ function openAddToSchedule() {
       return `<label class="user-select-item">
         <input type="checkbox" value="${u.id}" ${inList ? 'checked disabled' : ''}>
         <div>
-          <div class="user-select-name">${esc(u.name)}${inList ? ' <span style="color:#aaa;font-size:0.7rem;">（追加済）</span>' : ''}</div>
+          <div class="user-select-name">${u.wheelchair ? '♿ ' : ''}${esc(u.name)}${inList ? ' <span style="color:#aaa;font-size:0.7rem;">（追加済）</span>' : ''}</div>
           <div class="user-select-sub">${esc(u.address || '')}${veh ? '　' + esc(veh.name) : ''}</div>
         </div>
       </label>`;
@@ -945,7 +953,7 @@ function renderUsersPage() {
     const veh = data.vehicles.find(v => v.id === u.defaultVehicle);
     return `<div class="list-item">
       <div class="list-item-info">
-        <div class="list-item-name">${esc(u.name)}</div>
+        <div class="list-item-name">${u.wheelchair ? '♿ ' : ''}${esc(u.name)}</div>
         <div class="list-item-sub">
           ${u.address ? esc(u.address) + '　' : ''}
           ${veh ? '<span style="color:' + veh.color + ';">● ' + esc(veh.name) + '</span>' : ''}
@@ -980,6 +988,7 @@ function openUserModal(userId) {
     document.getElementById('user-default-vehicle').value = u.defaultVehicle || '';
     document.getElementById('user-default-pickup').value = u.defaultPickupTime || '';
     document.getElementById('user-default-dropoff').value = u.defaultDropoffTime || '';
+    document.getElementById('user-wheelchair').checked = !!u.wheelchair;
   } else {
     document.getElementById('modal-user-title').textContent = '利用者を追加';
     document.getElementById('edit-user-id').value = '';
@@ -987,6 +996,7 @@ function openUserModal(userId) {
       document.getElementById(id).value = '';
     });
     document.getElementById('user-default-vehicle').value = '';
+    document.getElementById('user-wheelchair').checked = false;
   }
   openModal('modal-user');
 }
@@ -1003,6 +1013,7 @@ function saveUser() {
     defaultVehicle:   document.getElementById('user-default-vehicle').value,
     defaultPickupTime:  document.getElementById('user-default-pickup').value,
     defaultDropoffTime: document.getElementById('user-default-dropoff').value,
+    wheelchair: document.getElementById('user-wheelchair').checked,
   };
   if (userId) {
     const i = data.users.findIndex(x => x.id === userId);
