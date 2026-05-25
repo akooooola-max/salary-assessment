@@ -419,7 +419,7 @@
   <div class="card">
     <h2>④ 各種手当</h2>
 
-    <div id="henso-section" class="form-group hidden">
+    <div id="henso-section" class="form-group">
       <label for="hensokin">変則勤務手当（入所事業所）</label>
       <select id="hensokin">
         <option value="0">0円（なし）</option>
@@ -659,9 +659,8 @@
 
   function onJobChange() {
     const job = document.getElementById('jobType').value;
-    const isNyusho = ['direct_nyusho', 'junkangofu'].includes(job);
     const isTusho  = ['direct_tusho', 'direct_jido'].includes(job);
-    document.getElementById('henso-section').classList.toggle('hidden', !isNyusho);
+    document.getElementById('henso-section').classList.remove('hidden');
     document.getElementById('sougei-section').classList.toggle('hidden', !isTusho);
   }
 
@@ -752,7 +751,7 @@
     document.getElementById('br-jukyo-row').style.display = jukyoFlag ? '' : 'none';
     document.getElementById('br-total').textContent     = fmt(total) + (jukyoFlag ? ' ＋ α' : '');
     document.getElementById('totalAmount').textContent  = fmt(total) + (jukyoFlag ? ' ＋ α' : '');
-    document.getElementById('br-henso-row').style.display  = isNyusho ? '' : 'none';
+    document.getElementById('br-henso-row').style.display  = '';
     document.getElementById('br-sougei-row').style.display = isTusho  ? '' : 'none';
     document.getElementById('br-yako-row').style.display   = isNyusho ? '' : 'none';
     document.getElementById('br-special-row').style.display = isNyusho ? '' : 'none';
