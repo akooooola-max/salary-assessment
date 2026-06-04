@@ -233,8 +233,6 @@
           <option value="kangofu">看護師（205,000円）</option>
           <option value="rehab">リハビリ職・PT・OT・ST（200,000円）</option>
           <option value="caremanager">介護支援専門員・ケアマネ（220,000円）</option>
-          <option value="service_manager">サービス管理責任者（228,000円）</option>
-          <option value="childdev_manager">児童発達支援管理責任者（230,000円）</option>
           <option value="soudan_specialist">相談支援専門員（200,000円）</option>
           <option value="soudan_general">相談支援（181,400円）</option>
         </optgroup>
@@ -275,11 +273,11 @@
     <div class="checkboxes">
       <label class="checkbox-item">
         <input type="checkbox" id="exp_hospital">
-        <span>病院・介護・保育・医療事務（相談）の経験あり<span class="amount">月+100円</span></span>
+        <span>介護・医療系（病院・保育・医療事務・相談）の経験あり<span class="amount">月+100円 × 経験年数</span></span>
       </label>
       <label class="checkbox-item">
         <input type="checkbox" id="exp_shogai">
-        <span>障がい・発達支援（相談）の経験あり<span class="amount">月+100円</span></span>
+        <span>障がい・発達支援（相談）の経験あり<span class="amount">月+100円 × 経験年数</span></span>
       </label>
     </div>
     <div class="form-group" style="margin-top: 16px;">
@@ -652,7 +650,7 @@
   const BASEUP = { direct: 19000, nursing_rehab: 10000, indirect: 8000 };
 
   // 経験加算：月額 × 年数（同種他企業経験、上限10年）
-  const EXP_PER_YEAR = { direct: 100, nursing_rehab: 200, indirect: 100 };
+  const EXP_PER_YEAR = { direct: 1000, nursing_rehab: 2000, indirect: 1000 };
 
   // 10年以上ボーナス
   const TEN_YEAR_BONUS = { direct: 300, nursing_rehab: 100, indirect: 100 };
@@ -706,8 +704,8 @@
     const perYear   = EXP_PER_YEAR[cat];
     let expBonus    = perYear * expYears;
     if (totalExp >= 10) expBonus += TEN_YEAR_BONUS[cat];
-    if (document.getElementById('exp_hospital').checked) expBonus += 100;
-    if (document.getElementById('exp_shogai').checked)   expBonus += 100;
+    if (document.getElementById('exp_hospital').checked) expBonus += 100 * expYears;
+    if (document.getElementById('exp_shogai').checked)   expBonus += 100 * expYears;
     const rawLeader = parseInt(document.getElementById('leaderBonus').value) || 0;
     // 看護・リハビリは上限700円
     const leaderBonus = (cat === 'nursing_rehab') ? Math.min(rawLeader, 700) : rawLeader;
