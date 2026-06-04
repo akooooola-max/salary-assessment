@@ -1,4 +1,4 @@
-const CACHE = 'kyoseikai-v2';
+const CACHE = 'kyoseikai-v3';
 const FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
