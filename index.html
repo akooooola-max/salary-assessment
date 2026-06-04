@@ -272,6 +272,21 @@
   <!-- ② 経験の詳細 -->
   <div class="card">
     <h2>② 経験の詳細</h2>
+
+    <div class="form-group">
+      <label>経験加算単価（年あたり）</label>
+      <div class="checkboxes" style="grid-template-columns: 1fr 1fr;">
+        <label class="checkbox-item">
+          <input type="radio" name="expRate" value="1000" checked style="width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:#2980b9;">
+          <span>1,000円 / 年</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="radio" name="expRate" value="2000" style="width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:#2980b9;">
+          <span>2,000円 / 年</span>
+        </label>
+      </div>
+    </div>
+
     <div class="checkboxes">
       <label class="checkbox-item">
         <input type="checkbox" id="exp_hospital">
@@ -695,8 +710,8 @@
     const totalExp  = parseInt(document.getElementById('totalExpYears').value) || 0;
 
     // 経験加算
-    const perYear   = EXP_PER_YEAR[cat];
-    let expBonus    = perYear * expYears;
+    const selectedRate = parseInt(document.querySelector('input[name="expRate"]:checked').value) || 1000;
+    let expBonus    = selectedRate * expYears;
     if (totalExp >= 10) expBonus += TEN_YEAR_BONUS[cat];
     if (document.getElementById('exp_hospital').checked) expBonus += 100 * expYears;
     if (document.getElementById('exp_shogai').checked)   expBonus += 100 * expYears;
