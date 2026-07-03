@@ -1,0 +1,17 @@
+{
+  "name": "デイリーTODO｜未完了は翌日へ自動繰越",
+  "short_name": "TODO",
+  "description": "未完了のTODOを翌日に自動で繰り越すデイリーTODOアプリ",
+  "start_url": "/salary-assessment/todo/",
+  "display": "standalone",
+  "background_color": "#f4f6f9",
+  "theme_color": "#1a5276",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

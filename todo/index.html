@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>デイリーTODO｜未完了は翌日へ自動繰越</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <meta name="theme-color" content="#1a5276">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TODO">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+      background: #f4f6f9;
+      color: #333;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    .container { max-width: 640px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 { font-size: 1.5rem; font-weight: 700; color: #1a5276; }
+    header p { color: #666; font-size: 0.85rem; margin-top: 6px; }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1a5276;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #d6eaf8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .count-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #fff;
+      background: #2980b9;
+      border-radius: 999px;
+      padding: 2px 10px;
+    }
+
+    .count-badge.done { background: #27ae60; }
+
+    /* 日付ナビゲーション */
+    .date-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .date-nav input[type="date"] {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fafafa;
+      outline: none;
+      font-family: inherit;
+      min-width: 0;
+    }
+
+    .date-nav input[type="date"]:focus { border-color: #2980b9; background: #fff; }
+
+    .nav-btn {
+      width: 42px;
+      height: 42px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 1rem;
+      color: #1a5276;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .nav-btn:hover { background: #eaf4fd; }
+
+    .today-btn {
+      padding: 0 14px;
+      height: 42px;
+      border: none;
+      border-radius: 8px;
+      background: #1a5276;
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .today-btn:hover { background: #2980b9; }
+
+    .date-label {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .date-label .today-mark {
+      color: #27ae60;
+      font-weight: 700;
+      margin-left: 6px;
+    }
+
+    .date-label .past-mark { color: #c0392b; font-weight: 600; margin-left: 6px; }
+
+    /* 追加フォーム */
+    .add-form { display: flex; gap: 8px; }
+
+    .add-form input[type="text"] {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #fafafa;
+      outline: none;
+      font-family: inherit;
+      min-width: 0;
+    }
+
+    .add-form input[type="text"]:focus { border-color: #2980b9; background: #fff; }
+
+    .add-btn {
+      padding: 0 20px;
+      border: none;
+      border-radius: 8px;
+      background: #2980b9;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .add-btn:hover { background: #1a5276; }
+
+    .form-note { margin-top: 8px; font-size: 0.78rem; color: #888; }
+
+    /* TODOリスト */
+    ul.todo-list { list-style: none; }
+
+    li.todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 8px;
+      border-bottom: 1px solid #eee;
+    }
+
+    li.todo-item:last-child { border-bottom: none; }
+
+    .todo-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-top: 1px;
+      accent-color: #27ae60;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .todo-body { flex: 1; min-width: 0; }
+
+    .todo-text {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .todo-item.completed .todo-text {
+      text-decoration: line-through;
+      color: #999;
+    }
+
+    .carryover-badge {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #c0392b;
+      background: #fdedec;
+      border-radius: 999px;
+      padding: 2px 10px;
+    }
+
+    .done-time {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 0.72rem;
+      color: #27ae60;
+    }
+
+    .delete-btn {
+      border: none;
+      background: none;
+      color: #bbb;
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+
+    .delete-btn:hover { color: #c0392b; }
+
+    .empty-msg {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.85rem;
+      padding: 18px 0;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #999;
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>デイリーTODO</h1>
+      <p>未完了のTODOは翌日に自動で繰り越されます</p>
+    </header>
+
+    <!-- 日付選択 -->
+    <div class="card">
+      <div class="date-nav">
+        <button type="button" class="nav-btn" id="prevDay" aria-label="前の日">◀</button>
+        <input type="date" id="dateInput">
+        <button type="button" class="nav-btn" id="nextDay" aria-label="次の日">▶</button>
+        <button type="button" class="today-btn" id="todayBtn">今日</button>
+      </div>
+      <div class="date-label" id="dateLabel"></div>
+    </div>
+
+    <!-- 追加フォーム -->
+    <div class="card">
+      <form class="add-form" id="addForm">
+        <input type="text" id="todoInput" placeholder="TODOを入力..." maxlength="200" autocomplete="off">
+        <button type="submit" class="add-btn">追加</button>
+      </form>
+      <p class="form-note" id="formNote"></p>
+    </div>
+
+    <!-- 未完了リスト -->
+    <div class="card">
+      <h2>未完了 <span class="count-badge" id="pendingCount">0</span></h2>
+      <ul class="todo-list" id="pendingList"></ul>
+      <p class="empty-msg" id="pendingEmpty">この日の未完了TODOはありません</p>
+    </div>
+
+    <!-- チェック済みリスト -->
+    <div class="card">
+      <h2>チェック済み <span class="count-badge done" id="doneCount">0</span></h2>
+      <ul class="todo-list" id="doneList"></ul>
+      <p class="empty-msg" id="doneEmpty">この日にチェックしたTODOはありません</p>
+    </div>
+
+    <footer>
+      データはこの端末（ブラウザ）内にのみ保存されます。<br>
+      過去の日付の未完了TODOはアプリを開いたときに自動で今日へ移動します。
+    </footer>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'daily-todo-v1';
+
+    let todos = load();
+    let viewDate = todayStr();
+
+    // ---------- ユーティリティ ----------
+    function todayStr() {
+      const d = new Date();
+      return toDateStr(d);
+    }
+
+    function toDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function formatJa(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const week = ['日', '月', '火', '水', '木', '金', '土'][new Date(y, m - 1, d).getDay()];
+      return `${y}年${m}月${d}日（${week}）`;
+    }
+
+    function formatShortJa(dateStr) {
+      const [, m, d] = dateStr.split('-').map(Number);
+      return `${m}/${d}`;
+    }
+
+    function shiftDate(dateStr, days) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d + days);
+      return toDateStr(dt);
+    }
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    }
+
+    // ---------- 繰越処理 ----------
+    // 過去の日付に残っている未完了TODOを今日へ移動する
+    function carryOver() {
+      const today = todayStr();
+      let changed = false;
+      for (const item of todos) {
+        if (!item.done && item.date < today) {
+          item.date = today;
+          changed = true;
+        }
+      }
+      if (changed) save();
+    }
+
+    // ---------- 操作 ----------
+    function addTodo(text, date) {
+      todos.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+        text,
+        date,          // 現在の予定日（繰越で更新される）
+        createdDate: date, // 最初に登録した日（繰越バッジ表示用）
+        done: false,
+        doneDate: null
+      });
+      save();
+    }
+
+    function toggleTodo(id) {
+      const item = todos.find(t => t.id === id);
+      if (!item) return;
+      if (!item.done) {
+        item.done = true;
+        item.doneDate = item.date;
+      } else {
+        // チェックを外すと未完了に戻る（過去日なら次回読込時に今日へ繰越）
+        item.done = false;
+        item.date = item.doneDate;
+        item.doneDate = null;
+      }
+      save();
+      carryOver();
+      render();
+    }
+
+    function deleteTodo(id) {
+      const item = todos.find(t => t.id === id);
+      if (!item) return;
+      if (!confirm(`「${item.text}」を削除しますか？`)) return;
+      todos = todos.filter(t => t.id !== id);
+      save();
+      render();
+    }
+
+    // ---------- 描画 ----------
+    function render() {
+      const today = todayStr();
+      const dateInput = document.getElementById('dateInput');
+      dateInput.value = viewDate;
+
+      // 日付ラベル
+      const label = document.getElementById('dateLabel');
+      let mark = '';
+      if (viewDate === today) mark = '<span class="today-mark">今日</span>';
+      else if (viewDate < today) mark = '<span class="past-mark">過去の日付</span>';
+      label.innerHTML = formatJa(viewDate) + mark;
+
+      // フォーム注記
+      const note = document.getElementById('formNote');
+      if (viewDate < today) {
+        note.textContent = '※ 過去の日付に追加したTODOは、未完了のまま自動で今日へ繰り越されます。';
+      } else if (viewDate > today) {
+        note.textContent = `※ ${formatShortJa(viewDate)} の予定として登録されます。`;
+      } else {
+        note.textContent = '';
+      }
+
+      const pending = todos
+        .filter(t => !t.done && t.date === viewDate)
+        .sort((a, b) => a.createdDate.localeCompare(b.createdDate));
+      const done = todos
+        .filter(t => t.done && t.doneDate === viewDate);
+
+      renderList('pendingList', 'pendingEmpty', pending, false);
+      renderList('doneList', 'doneEmpty', done, true);
+
+      document.getElementById('pendingCount').textContent = pending.length;
+      document.getElementById('doneCount').textContent = done.length;
+    }
+
+    function renderList(listId, emptyId, items, isDone) {
+      const ul = document.getElementById(listId);
+      const empty = document.getElementById(emptyId);
+      ul.innerHTML = '';
+      empty.style.display = items.length ? 'none' : 'block';
+
+      for (const item of items) {
+        const li = document.createElement('li');
+        li.className = 'todo-item' + (isDone ? ' completed' : '');
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = isDone;
+        cb.addEventListener('change', () => toggleTodo(item.id));
+
+        const body = document.createElement('div');
+        body.className = 'todo-body';
+
+        const text = document.createElement('div');
+        text.className = 'todo-text';
+        text.textContent = item.text;
+        body.appendChild(text);
+
+        if (!isDone && item.createdDate < item.date) {
+          const badge = document.createElement('span');
+          badge.className = 'carryover-badge';
+          badge.textContent = `${formatShortJa(item.createdDate)} から繰越`;
+          body.appendChild(badge);
+        }
+
+        if (isDone && item.createdDate < item.doneDate) {
+          const info = document.createElement('span');
+          info.className = 'done-time';
+          info.textContent = `${formatShortJa(item.createdDate)} 登録分`;
+          body.appendChild(info);
+        }
+
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'delete-btn';
+        del.textContent = '✕';
+        del.setAttribute('aria-label', '削除');
+        del.addEventListener('click', () => deleteTodo(item.id));
+
+        li.appendChild(cb);
+        li.appendChild(body);
+        li.appendChild(del);
+        ul.appendChild(li);
+      }
+    }
+
+    // ---------- イベント ----------
+    document.getElementById('addForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const input = document.getElementById('todoInput');
+      const text = input.value.trim();
+      if (!text) return;
+      addTodo(text, viewDate);
+      carryOver(); // 過去日に追加した場合は即座に今日へ
+      input.value = '';
+      render();
+      input.focus();
+    });
+
+    document.getElementById('dateInput').addEventListener('change', e => {
+      if (e.target.value) {
+        viewDate = e.target.value;
+        render();
+      }
+    });
+
+    document.getElementById('prevDay').addEventListener('click', () => {
+      viewDate = shiftDate(viewDate, -1);
+      render();
+    });
+
+    document.getElementById('nextDay').addEventListener('click', () => {
+      viewDate = shiftDate(viewDate, 1);
+      render();
+    });
+
+    document.getElementById('todayBtn').addEventListener('click', () => {
+      viewDate = todayStr();
+      render();
+    });
+
+    // 日付をまたいでアプリに戻ってきたときにも繰越を実行
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        carryOver();
+        render();
+      }
+    });
+
+    // ---------- 初期化 ----------
+    carryOver();
+    render();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+  </script>
+</body>
+</html>
