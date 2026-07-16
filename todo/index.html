@@ -224,6 +224,105 @@
 
     .delete-btn:hover { color: #c0392b; }
 
+    /* 並び替えボタン */
+    .order-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .order-btn {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      color: #1a5276;
+      font-size: 0.7rem;
+      line-height: 1;
+      width: 26px;
+      height: 22px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .order-btn:hover:not(:disabled) { background: #eaf4fd; }
+
+    .order-btn:disabled { color: #ddd; cursor: default; }
+
+    /* 削除確認モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+      padding: 24px;
+      max-width: 360px;
+      width: 100%;
+    }
+
+    .modal-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #c0392b;
+      margin-bottom: 10px;
+    }
+
+    .modal-text {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #444;
+      margin-bottom: 20px;
+      word-break: break-word;
+    }
+
+    .modal-text .target {
+      font-weight: 700;
+      color: #1a5276;
+    }
+
+    .modal-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .modal-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .modal-btn.cancel {
+      border: 1px solid #ccc;
+      background: #fff;
+      color: #555;
+    }
+
+    .modal-btn.cancel:hover { background: #f0f0f0; }
+
+    .modal-btn.danger {
+      border: none;
+      background: #c0392b;
+      color: #fff;
+    }
+
+    .modal-btn.danger:hover { background: #a93226; }
+
     .empty-msg {
       text-align: center;
       color: #aaa;
@@ -287,6 +386,18 @@
     </footer>
   </div>
 
+  <!-- 削除確認モーダル -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-title" id="modalTitle">削除の確認</div>
+      <div class="modal-text">「<span class="target" id="modalTarget"></span>」を本当に削除しますか？<br>この操作は取り消せません。</div>
+      <div class="modal-btns">
+        <button type="button" class="modal-btn cancel" id="modalCancel">キャンセル</button>
+        <button type="button" class="modal-btn danger" id="modalDelete">削除する</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const STORAGE_KEY = 'daily-todo-v1';
 
@@ -324,12 +435,26 @@
     }
 
     function load() {
+      let list;
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
+        list = raw ? JSON.parse(raw) : [];
       } catch {
-        return [];
+        list = [];
       }
+      // 旧データに並び順がない場合は登録日順で採番する
+      let needsOrder = list.some(t => typeof t.order !== 'number');
+      if (needsOrder) {
+        list
+          .slice()
+          .sort((a, b) => a.createdDate.localeCompare(b.createdDate))
+          .forEach((t, i) => { if (typeof t.order !== 'number') t.order = i; });
+      }
+      return list;
+    }
+
+    function nextOrder() {
+      return todos.reduce((max, t) => Math.max(max, t.order), -1) + 1;
     }
 
     function save() {
@@ -358,9 +483,25 @@
         date,          // 現在の予定日（繰越で更新される）
         createdDate: date, // 最初に登録した日（繰越バッジ表示用）
         done: false,
-        doneDate: null
+        doneDate: null,
+        order: nextOrder()
       });
       save();
+    }
+
+    // 表示中の未完了リスト内で1つ上／下と並び順を入れ替える
+    function moveTodo(id, dir) {
+      const visible = todos
+        .filter(t => !t.done && t.date === viewDate)
+        .sort((a, b) => a.order - b.order);
+      const idx = visible.findIndex(t => t.id === id);
+      const swapIdx = idx + dir;
+      if (idx < 0 || swapIdx < 0 || swapIdx >= visible.length) return;
+      const tmp = visible[idx].order;
+      visible[idx].order = visible[swapIdx].order;
+      visible[swapIdx].order = tmp;
+      save();
+      render();
     }
 
     function toggleTodo(id) {
@@ -380,13 +521,29 @@
       render();
     }
 
-    function deleteTodo(id) {
+    // ---------- 削除確認モーダル ----------
+    let deleteTargetId = null;
+
+    function openDeleteModal(id) {
       const item = todos.find(t => t.id === id);
       if (!item) return;
-      if (!confirm(`「${item.text}」を削除しますか？`)) return;
-      todos = todos.filter(t => t.id !== id);
-      save();
-      render();
+      deleteTargetId = id;
+      document.getElementById('modalTarget').textContent = item.text;
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function closeDeleteModal() {
+      deleteTargetId = null;
+      document.getElementById('modalOverlay').classList.remove('active');
+    }
+
+    function confirmDelete() {
+      if (deleteTargetId !== null) {
+        todos = todos.filter(t => t.id !== deleteTargetId);
+        save();
+        render();
+      }
+      closeDeleteModal();
     }
 
     // ---------- 描画 ----------
@@ -414,7 +571,7 @@
 
       const pending = todos
         .filter(t => !t.done && t.date === viewDate)
-        .sort((a, b) => a.createdDate.localeCompare(b.createdDate));
+        .sort((a, b) => a.order - b.order);
       const done = todos
         .filter(t => t.done && t.doneDate === viewDate);
 
@@ -431,7 +588,7 @@
       ul.innerHTML = '';
       empty.style.display = items.length ? 'none' : 'block';
 
-      for (const item of items) {
+      items.forEach((item, i) => {
         const li = document.createElement('li');
         li.className = 'todo-item' + (isDone ? ' completed' : '');
 
@@ -467,13 +624,39 @@
         del.className = 'delete-btn';
         del.textContent = '✕';
         del.setAttribute('aria-label', '削除');
-        del.addEventListener('click', () => deleteTodo(item.id));
+        del.addEventListener('click', () => openDeleteModal(item.id));
 
         li.appendChild(cb);
         li.appendChild(body);
+
+        if (!isDone) {
+          const orderBtns = document.createElement('div');
+          orderBtns.className = 'order-btns';
+
+          const up = document.createElement('button');
+          up.type = 'button';
+          up.className = 'order-btn';
+          up.textContent = '▲';
+          up.setAttribute('aria-label', '上へ移動');
+          up.disabled = i === 0;
+          up.addEventListener('click', () => moveTodo(item.id, -1));
+
+          const down = document.createElement('button');
+          down.type = 'button';
+          down.className = 'order-btn';
+          down.textContent = '▼';
+          down.setAttribute('aria-label', '下へ移動');
+          down.disabled = i === items.length - 1;
+          down.addEventListener('click', () => moveTodo(item.id, 1));
+
+          orderBtns.appendChild(up);
+          orderBtns.appendChild(down);
+          li.appendChild(orderBtns);
+        }
+
         li.appendChild(del);
         ul.appendChild(li);
-      }
+      });
     }
 
     // ---------- イベント ----------
@@ -509,6 +692,15 @@
     document.getElementById('todayBtn').addEventListener('click', () => {
       viewDate = todayStr();
       render();
+    });
+
+    document.getElementById('modalCancel').addEventListener('click', closeDeleteModal);
+    document.getElementById('modalDelete').addEventListener('click', confirmDelete);
+    document.getElementById('modalOverlay').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeDeleteModal();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeDeleteModal();
     });
 
     // 日付をまたいでアプリに戻ってきたときにも繰越を実行
