@@ -3,781 +3,471 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>令和8年度 採用査定システム｜慶生会</title>
+  <title>星読みタロット｜Mystic Tarot</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.svg">
-  <meta name="theme-color" content="#1a5276">
+  <meta name="theme-color" content="#1a1440">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="給与査定">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="タロット">
+  <meta name="description" content="大アルカナ22枚で占う本格タロット占い。今日の運勢・三枚引き・ケルト十字などのスプレッドに対応。">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
-      background: #f4f6f9;
-      color: #333;
-      min-height: 100vh;
-      padding: 32px 16px;
+    :root {
+      --bg-0: #0b0820;
+      --bg-1: #171043;
+      --bg-2: #241a5e;
+      --gold: #e8c56a;
+      --gold-soft: #f2dfa0;
+      --violet: #b18bff;
+      --ink: #ede9ff;
+      --ink-dim: #b9b2df;
+      --card-back: linear-gradient(160deg, #2a1e63 0%, #150e38 100%);
     }
 
-    .container { max-width: 760px; margin: 0 auto; }
+    html { -webkit-text-size-adjust: 100%; }
 
-    header { text-align: center; margin-bottom: 32px; }
-    header h1 { font-size: 1.6rem; font-weight: 700; color: #1a5276; }
-    header p { color: #666; font-size: 0.9rem; margin-top: 6px; }
+    body {
+      font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif;
+      background:
+        radial-gradient(1200px 700px at 80% -10%, rgba(177,139,255,0.28), transparent 60%),
+        radial-gradient(900px 600px at 10% 110%, rgba(232,197,106,0.15), transparent 55%),
+        linear-gradient(180deg, var(--bg-0), var(--bg-1) 55%, var(--bg-2));
+      background-attachment: fixed;
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 28px 16px 64px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* twinkling stars */
+    .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .star {
+      position: absolute; width: 2px; height: 2px; border-radius: 50%;
+      background: #fff; opacity: 0.7;
+      animation: twinkle var(--tw, 3s) ease-in-out infinite;
+    }
+    @keyframes twinkle { 0%,100% { opacity: 0.15; transform: scale(0.6);} 50% { opacity: 0.9; transform: scale(1.1);} }
+
+    .wrap { max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
+
+    header { text-align: center; margin-bottom: 26px; }
+    header .mark { font-size: 2rem; letter-spacing: 0.35em; margin-bottom: 4px; }
+    header h1 {
+      font-size: 1.9rem; font-weight: 700; letter-spacing: 0.12em;
+      background: linear-gradient(120deg, var(--gold-soft), var(--gold), var(--violet));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    header p { color: var(--ink-dim); font-size: 0.82rem; margin-top: 8px; letter-spacing: 0.08em; }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(38,26,94,0.55), rgba(18,12,48,0.6));
+      border: 1px solid rgba(232,197,106,0.28);
+      border-radius: 18px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);
+      padding: 24px 22px;
+      margin-bottom: 22px;
+      backdrop-filter: blur(4px);
+    }
+
+    .panel h2 {
+      font-size: 0.95rem; letter-spacing: 0.14em; color: var(--gold-soft);
+      margin-bottom: 16px; text-align: center; font-weight: 700;
+    }
+
+    /* spread selector */
+    .spreads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .spread-btn {
+      appearance: none; cursor: pointer; text-align: center;
+      background: rgba(20,14,52,0.5);
+      border: 1px solid rgba(177,139,255,0.3);
+      border-radius: 14px; color: var(--ink);
+      padding: 16px 8px; font-family: inherit; transition: all 0.22s ease;
+    }
+    .spread-btn .ic { font-size: 1.5rem; display: block; margin-bottom: 6px; }
+    .spread-btn .nm { font-size: 0.9rem; font-weight: 700; letter-spacing: 0.05em; }
+    .spread-btn .ds { font-size: 0.68rem; color: var(--ink-dim); margin-top: 4px; }
+    .spread-btn:hover { transform: translateY(-3px); border-color: var(--gold); box-shadow: 0 8px 22px rgba(0,0,0,0.4); }
+    .spread-btn.active {
+      border-color: var(--gold);
+      background: linear-gradient(180deg, rgba(232,197,106,0.22), rgba(177,139,255,0.14));
+      box-shadow: 0 0 0 1px var(--gold) inset, 0 6px 20px rgba(232,197,106,0.2);
+    }
+
+    .field { margin-top: 18px; }
+    .field label { display: block; font-size: 0.8rem; color: var(--ink-dim); margin-bottom: 8px; letter-spacing: 0.08em; }
+    .field input {
+      width: 100%; padding: 13px 14px; border-radius: 12px;
+      background: rgba(11,8,32,0.6); color: var(--ink);
+      border: 1px solid rgba(177,139,255,0.35); font-family: inherit; font-size: 0.95rem;
+    }
+    .field input::placeholder { color: rgba(185,178,223,0.6); }
+    .field input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232,197,106,0.15); }
+
+    .draw-btn {
+      display: block; width: 100%; margin-top: 20px; cursor: pointer;
+      padding: 16px; border: none; border-radius: 14px; font-family: inherit;
+      font-size: 1.05rem; font-weight: 700; letter-spacing: 0.14em; color: #1a1030;
+      background: linear-gradient(120deg, var(--gold-soft), var(--gold));
+      box-shadow: 0 8px 24px rgba(232,197,106,0.35); transition: transform 0.18s, box-shadow 0.18s;
+    }
+    .draw-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(232,197,106,0.5); }
+    .draw-btn:active { transform: translateY(0); }
+    .draw-btn:disabled { opacity: 0.55; cursor: default; transform: none; box-shadow: none; }
+
+    /* results */
+    #result { margin-top: 4px; }
+    .reading-title { text-align: center; color: var(--gold-soft); font-size: 0.9rem; letter-spacing: 0.12em; margin-bottom: 4px; }
+    .reading-q { text-align: center; color: var(--ink-dim); font-size: 0.8rem; margin-bottom: 20px; font-style: italic; }
+
+    .board { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }
+
+    .slot { display: flex; flex-direction: column; align-items: center; width: 150px; }
+    .slot .pos { font-size: 0.72rem; letter-spacing: 0.1em; color: var(--violet); margin-bottom: 8px; min-height: 1em; text-align: center; }
 
     .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      padding: 28px;
-      margin-bottom: 24px;
+      width: 130px; height: 220px; perspective: 1000px; cursor: pointer;
+      opacity: 0; transform: translateY(18px);
+      animation: rise 0.5s ease forwards;
+    }
+    @keyframes rise { to { opacity: 1; transform: translateY(0);} }
+
+    .card-inner {
+      position: relative; width: 100%; height: 100%;
+      transition: transform 0.8s cubic-bezier(0.4,0.2,0.2,1);
+      transform-style: preserve-3d;
+    }
+    .card.flipped .card-inner { transform: rotateY(180deg); }
+
+    .face {
+      position: absolute; inset: 0; backface-visibility: hidden;
+      border-radius: 12px; overflow: hidden;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border: 1px solid rgba(232,197,106,0.5);
+    }
+    .back {
+      background: var(--card-back);
+      box-shadow: inset 0 0 0 6px rgba(11,8,32,0.6), inset 0 0 0 7px rgba(232,197,106,0.35);
+    }
+    .back .bk-emblem { font-size: 2.4rem; color: var(--gold); opacity: 0.9; text-shadow: 0 0 12px rgba(232,197,106,0.6); }
+    .back::after {
+      content: ""; position: absolute; inset: 14px; border-radius: 8px;
+      border: 1px solid rgba(232,197,106,0.25);
+      background:
+        radial-gradient(circle at 50% 30%, rgba(177,139,255,0.25), transparent 55%);
     }
 
-    .card h2 {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #1a5276;
-      margin-bottom: 20px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #d6eaf8;
+    .front {
+      transform: rotateY(180deg);
+      background: linear-gradient(170deg, #fbf4e2 0%, #f1e4c4 100%);
+      color: #2a1e5e; padding: 10px 8px; text-align: center;
     }
-
-    .form-group { margin-bottom: 20px; }
-    .form-group:last-child { margin-bottom: 0; }
-
-    label {
-      display: block;
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: #444;
-      margin-bottom: 6px;
+    .front.reversed .fr-art { transform: rotate(180deg); }
+    .front .fr-num { font-size: 0.62rem; letter-spacing: 0.15em; color: #8a6d1f; }
+    .front .fr-art { font-size: 2.9rem; line-height: 1.1; margin: 6px 0; transition: transform 0.3s; }
+    .front .fr-name { font-size: 0.86rem; font-weight: 700; }
+    .front .fr-en { font-size: 0.58rem; color: #6b5a2a; letter-spacing: 0.08em; margin-top: 2px; }
+    .front .fr-ori {
+      margin-top: 8px; font-size: 0.66rem; font-weight: 700; padding: 3px 10px; border-radius: 20px;
     }
+    .front .fr-ori.up { background: rgba(46,125,50,0.15); color: #2e7d32; }
+    .front .fr-ori.rev { background: rgba(178,64,64,0.15); color: #b24040; }
 
-    select, input[type="number"] {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      background: #fafafa;
-      appearance: none;
-      -webkit-appearance: none;
-      outline: none;
-      transition: border-color 0.2s;
+    .meaning {
+      margin-top: 12px; width: 100%;
+      background: rgba(11,8,32,0.5); border: 1px solid rgba(177,139,255,0.25);
+      border-radius: 12px; padding: 12px 13px;
+      opacity: 0; transition: opacity 0.5s ease;
     }
+    .meaning.show { opacity: 1; }
+    .meaning .m-kw { font-size: 0.72rem; color: var(--gold-soft); letter-spacing: 0.06em; margin-bottom: 6px; }
+    .meaning .m-tx { font-size: 0.78rem; line-height: 1.7; color: var(--ink); }
 
-    select:focus, input[type="number"]:focus {
-      border-color: #2980b9;
-      background: #fff;
+    .summary {
+      margin-top: 24px; padding: 20px; border-radius: 14px;
+      background: linear-gradient(180deg, rgba(232,197,106,0.12), rgba(177,139,255,0.08));
+      border: 1px solid rgba(232,197,106,0.3);
+      opacity: 0; transition: opacity 0.6s ease;
     }
+    .summary.show { opacity: 1; }
+    .summary h3 { font-size: 0.85rem; color: var(--gold-soft); letter-spacing: 0.12em; margin-bottom: 10px; text-align: center; }
+    .summary p { font-size: 0.85rem; line-height: 1.9; color: var(--ink); }
 
-    .checkboxes {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+    .actions { display: flex; gap: 12px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
+    .ghost-btn {
+      cursor: pointer; padding: 12px 22px; border-radius: 12px; font-family: inherit;
+      font-size: 0.85rem; letter-spacing: 0.08em;
+      background: transparent; color: var(--gold-soft);
+      border: 1px solid rgba(232,197,106,0.5); transition: all 0.2s;
     }
+    .ghost-btn:hover { background: rgba(232,197,106,0.12); }
 
-    .checkbox-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
+    .hint { text-align: center; color: var(--ink-dim); font-size: 0.75rem; margin-top: 14px; letter-spacing: 0.05em; }
 
-    .checkbox-item:hover { background: #eaf4fd; }
+    footer { text-align: center; color: rgba(185,178,223,0.5); font-size: 0.68rem; margin-top: 36px; letter-spacing: 0.06em; }
 
-    .checkbox-item input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      margin-top: 2px;
-      accent-color: #2980b9;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-
-    .checkbox-item span { font-size: 0.88rem; line-height: 1.4; }
-    .checkbox-item .amount { font-size: 0.78rem; color: #2980b9; display: block; }
-
-    .transport-detail { display: none; margin-top: 16px; }
-    .transport-detail.active { display: block; }
-
-    .transport-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .info-box {
-      background: #eaf4fd;
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 0.85rem;
-      color: #1a5276;
-      margin-top: 10px;
-    }
-
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 14px;
-      background: #1a5276;
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 700;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.2s;
-      letter-spacing: 0.05em;
-    }
-
-    .btn:hover { background: #154360; }
-
-    .btn-reset {
-      display: block;
-      width: 100%;
-      margin-top: 16px;
-      padding: 11px;
-      background: #fff;
-      color: #1a5276;
-      font-size: 0.9rem;
-      font-weight: 600;
-      border: 2px solid #1a5276;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .btn-reset:hover { background: #eaf4fd; }
-
-    #result { display: none; }
-
-    .result-total {
-      text-align: center;
-      padding: 24px 0 20px;
-    }
-
-    .result-total .label { font-size: 0.9rem; color: #666; margin-bottom: 8px; }
-    .result-total .amount { font-size: 2.6rem; font-weight: 800; color: #1a5276; }
-    .result-total .sub { font-size: 0.85rem; color: #888; margin-top: 4px; }
-
-    .breakdown {
-      border-top: 1px solid #eee;
-      margin-top: 20px;
-      padding-top: 16px;
-    }
-
-    .breakdown-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 9px 0;
-      border-bottom: 1px dashed #eee;
-      font-size: 0.9rem;
-    }
-
-    .breakdown-row:last-child { border-bottom: none; }
-    .breakdown-row .key { color: #555; }
-    .breakdown-row .val { font-weight: 600; color: #222; }
-    .breakdown-row .val.plus { color: #1a8c4e; }
-    .breakdown-row .val.transport { color: #7d3c98; }
-    .breakdown-row .val.baseup { color: #c0392b; }
-    .breakdown-row.total-row { font-weight: 700; font-size: 1rem; }
-
-    .range-note {
-      background: #fef9e7;
-      border: 1px solid #f9e79f;
-      border-radius: 8px;
-      padding: 12px 16px;
-      font-size: 0.85rem;
-      color: #7d6608;
-      margin-top: 20px;
-      line-height: 1.6;
-    }
-
-    .hidden { display: none !important; }
-
-    @media print {
-      @page { size: A4 portrait; margin: 14mm; }
-      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      body { background: #fff; padding: 0; font-size: 10.5pt; }
-      .container { max-width: 100%; }
-      /* 入力フォーム・操作ボタンは印刷しない（結果のみ1枚に） */
-      .card:not(#result) { display: none !important; }
-      .btn, .btn-reset { display: none !important; }
-      header { margin-bottom: 12px; }
-      header h1 { font-size: 1.3rem; }
-      #result {
-        box-shadow: none;
-        border: none;
-        padding: 0;
-        margin: 0;
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
-      .result-total { padding: 8px 0 12px; }
-      .breakdown { margin-top: 12px; padding-top: 10px; }
-      .breakdown-row { padding: 6px 0; }
-      .range-note { margin-top: 12px; }
+    @media (max-width: 560px) {
+      .spreads { grid-template-columns: 1fr; }
+      .spread-btn { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 14px; }
+      .spread-btn .ic { margin: 0; }
+      header h1 { font-size: 1.5rem; }
+      .slot { width: 132px; }
     }
   </style>
 </head>
 <body>
-<div class="container">
+  <div class="stars" id="stars"></div>
+  <div class="wrap">
+    <header>
+      <div class="mark">☾ ✶ ☽</div>
+      <h1>星読みタロット</h1>
+      <p>MYSTIC TAROT ・ 大アルカナ22枚が導く、あなたへのメッセージ</p>
+    </header>
 
-  <header>
-    <h1>令和8年度 採用査定システム</h1>
-    <p>社会福祉法人 慶生会｜既卒正職員 月給査定</p>
-  </header>
+    <section class="panel" id="setup">
+      <h2>◇ スプレッドを選ぶ ◇</h2>
+      <div class="spreads" id="spreads"></div>
 
-  <!-- ① 基本情報 -->
-  <div class="card">
-    <h2>① 基本情報</h2>
+      <div class="field">
+        <label for="question">占いたいこと（任意）</label>
+        <input type="text" id="question" placeholder="例：今の恋の行方は？　仕事で進むべき道は？" maxlength="60" autocomplete="off">
+      </div>
 
-    <div class="form-group">
-      <label for="jobType">職種</label>
-      <select id="jobType" onchange="onJobChange()">
-        <option value="">選択してください</option>
-        <optgroup label="直接処遇">
-          <option value="direct_nyusho">入所支援（191,100円）</option>
-          <option value="direct_tusho">日中支援（185,900円）</option>
-          <option value="direct_jido">児童（185,900円）</option>
-          <option value="junkangofu">准看護師（192,500円）</option>
-          <option value="kangofu">看護師（205,000円）</option>
-          <option value="rehab">リハビリ職・PT・OT・ST（200,000円）</option>
-          <option value="caremanager">介護支援専門員・ケアマネ（220,000円）</option>
-          <option value="service_manager">サービス管理責任者（228,000円）</option>
-          <option value="childdev_manager">児童発達支援管理責任者（230,000円）</option>
-          <option value="soudan_specialist">相談支援専門員（200,000円）</option>
-          <option value="soudan_general">相談支援（181,400円）</option>
-        </optgroup>
-        <optgroup label="間接処遇">
-          <option value="career">キャリア職（225,000円）</option>
-          <option value="jimu_general">一般事務（181,400円）</option>
-          <option value="jimu_keiri">経理事務（187,200円）</option>
-          <option value="kanrieiyoshi">管理栄養士（181,400円）</option>
-          <option value="eiyoshi">栄養士（181,400円）</option>
-        </optgroup>
-      </select>
-    </div>
+      <button class="draw-btn" id="drawBtn">カードを引く</button>
+      <p class="hint">静かに願いを思い浮かべながら、ボタンを押してください。</p>
+    </section>
 
-    <div class="form-group">
-      <label for="expYears">他企業での同種職種 経験年数（上限10年）</label>
-      <input type="number" id="expYears" min="0" max="10" value="0" placeholder="0">
-    </div>
-
-    <div class="form-group">
-      <label for="totalExpYears">福祉業界 通算経験年数（10年以上加算ボーナス判定に使用）</label>
-      <input type="number" id="totalExpYears" min="0" max="40" value="0" placeholder="0">
-    </div>
+    <section id="result"></section>
   </div>
 
-  <!-- ② 経験の詳細 -->
-  <div class="card">
-    <h2>② 経験の詳細</h2>
+  <footer>星読みタロット ・ 娯楽目的のアプリです ・ オフラインでご利用いただけます</footer>
 
-    <div class="form-group">
-      <label>経験加算単価（年あたり）</label>
-      <div class="checkboxes" style="grid-template-columns: 1fr 1fr;">
-        <label class="checkbox-item">
-          <input type="radio" name="expRate" value="1000" checked style="width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:#2980b9;">
-          <span>1,000円 / 年</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="radio" name="expRate" value="2000" style="width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:#2980b9;">
-          <span>2,000円 / 年</span>
-        </label>
-      </div>
-    </div>
+  <script>
+  /* ============ 大アルカナ 22枚 ============ */
+  const DECK = [
+    { n:0,  name:"愚者",       en:"The Fool",           art:"🃏", up:{kw:"自由・出発・可能性", tx:"新しい冒険の始まり。既成概念にとらわれず、まっさらな心で一歩を踏み出す時。無邪気さと好奇心があなたを未知の世界へ導きます。"}, rev:{kw:"無計画・軽率・不安", tx:"準備不足のまま突き進むと足元をすくわれそう。無責任さや優柔不断に注意し、一度立ち止まって計画を見直しましょう。"} },
+    { n:1,  name:"魔術師",     en:"The Magician",       art:"🪄", up:{kw:"創造・意志・才能", tx:"必要なものはすでに手の中に。強い意志と行動力で、望みを形にできる絶好の時。あなたの才能が発揮されます。"}, rev:{kw:"迷い・停滞・悪用", tx:"目的を見失っていませんか。技術や言葉を誤った方向に使うと信頼を失います。基本に立ち返りましょう。"} },
+    { n:2,  name:"女教皇",     en:"The High Priestess", art:"🌙", up:{kw:"直感・知性・神秘", tx:"理屈よりも直感が真実を告げています。静けさの中に答えあり。知的で冷静な判断が幸運を呼びます。"}, rev:{kw:"感情的・秘密・不調和", tx:"感情に流されて本質を見失いがち。内なる声を無視すると誤解が生まれます。心を整えて。"} },
+    { n:3,  name:"女帝",       en:"The Empress",        art:"🌷", up:{kw:"豊かさ・愛情・実り", tx:"愛と豊穣の象徴。努力が実を結び、心満たされる時。周囲への慈しみがさらなる幸福を育てます。"}, rev:{kw:"依存・浪費・停滞", tx:"愛情過多や甘えが関係をこじらせるかも。浪費や怠惰にも注意。自立の意識を取り戻して。"} },
+    { n:4,  name:"皇帝",       en:"The Emperor",        art:"♛", up:{kw:"安定・責任・統率", tx:"確固たる意志とリーダーシップで物事を支配できる時。責任を果たすことで信頼と地位が築かれます。"}, rev:{kw:"独善・頑固・支配", tx:"力で押さえつけようとすると反発を招きます。柔軟さを欠いた頑固さは孤立の元。"} },
+    { n:5,  name:"教皇",       en:"The Hierophant",     art:"⛪", up:{kw:"信頼・教え・道徳", tx:"良き師や助言者に恵まれる時。伝統やルールを尊重することで正しい道が開けます。誠実さが鍵。"}, rev:{kw:"束縛・偽善・不信", tx:"形式にとらわれすぎて窮屈に。信頼できない助言や偽りの権威に惑わされないよう注意。"} },
+    { n:6,  name:"恋人",       en:"The Lovers",         art:"💞", up:{kw:"愛・選択・調和", tx:"心が通い合う喜び。大切な選択においては、直感と愛に従うことが正解へ導きます。良縁の予感。"}, rev:{kw:"別離・迷い・誘惑", tx:"心変わりや優柔不断がすれ違いを生みそう。安易な誘惑に流されず、本当の気持ちを見つめて。"} },
+    { n:7,  name:"戦車",       en:"The Chariot",        art:"🏇", up:{kw:"勝利・前進・行動", tx:"勢いに乗って突き進む時。強い意志とスピードで目標を勝ち取れます。迷わず前へ。"}, rev:{kw:"暴走・焦り・停滞", tx:"焦りや感情のコントロール不足で空回り。方向性を見失った暴走は禁物。落ち着いて舵を取り直して。"} },
+    { n:8,  name:"力",         en:"Strength",           art:"🦁", up:{kw:"勇気・忍耐・克己", tx:"力ずくではなく、優しさと忍耐で困難を乗り越える時。内なる強さがあなたを支えます。"}, rev:{kw:"弱気・不安・自堕落", tx:"自信を失い、衝動に負けそう。無理は禁物ですが、諦めるにはまだ早い。少しずつ心を立て直して。"} },
+    { n:9,  name:"隠者",       en:"The Hermit",         art:"🏮", up:{kw:"探求・内省・賢明", tx:"一人静かに向き合うことで真理が見えてくる時。焦らず内面を深め、経験を知恵に変えましょう。"}, rev:{kw:"孤立・頑固・逃避", tx:"閉じこもりすぎて視野が狭くなっていませんか。孤独と孤立は違います。時には人の手を借りて。"} },
+    { n:10, name:"運命の輪",   en:"Wheel of Fortune",   art:"☸", up:{kw:"転機・幸運・好機", tx:"運命の歯車が良い方向へ回り出す。訪れたチャンスを逃さず掴めば、大きな飛躍につながります。"}, rev:{kw:"停滞・不運・タイミング", tx:"流れが滞る時。無理に動かず好機を待つのも策。悪循環を断ち切る工夫を。"} },
+    { n:11, name:"正義",       en:"Justice",            art:"⚖", up:{kw:"公正・均衡・決断", tx:"公平でバランスの取れた判断が幸運を呼びます。誠実に向き合えば、正当な結果が得られる時。"}, rev:{kw:"不公平・偏り・ごまかし", tx:"偏った判断や不誠実さが問題の元。責任逃れをせず、公正な態度を取り戻しましょう。"} },
+    { n:12, name:"吊るされた男", en:"The Hanged Man",    art:"🙃", up:{kw:"忍耐・視点・受容", tx:"今は動けない時。しかしこの停滞は無駄ではありません。発想を転換し、受け入れることで道が開けます。"}, rev:{kw:"徒労・停滞・犠牲", tx:"報われない努力に疲れていませんか。無意味な我慢は手放して。視点を変える勇気が必要です。"} },
+    { n:13, name:"死神",       en:"Death",              art:"🦋", up:{kw:"変容・再生・終わり", tx:"一つの終わりは新たな始まり。古いものを手放すことで、生まれ変わりのチャンスが訪れます。"}, rev:{kw:"停滞・執着・恐れ", tx:"変化を恐れて過去にしがみついていませんか。終わらせるべきものを終わらせる決断が必要です。"} },
+    { n:14, name:"節制",       en:"Temperance",         art:"🍶", up:{kw:"調和・節度・浄化", tx:"異なるものを上手に調和させることで、穏やかな豊かさが得られます。バランス感覚が幸運の鍵。"}, rev:{kw:"不均衡・浪費・不摂生", tx:"感情や生活のバランスが崩れ気味。無理や過剰を避け、心身を整えることが大切です。"} },
+    { n:15, name:"悪魔",       en:"The Devil",          art:"😈", up:{kw:"欲望・束縛・執着", tx:"抗いがたい魅力や欲望に囚われる時。本能に忠実になれる反面、依存や堕落には注意が必要です。"}, rev:{kw:"解放・自制・脱却", tx:"束縛から抜け出す好機。断ち切れなかった悪習や関係を手放し、自由を取り戻せます。"} },
+    { n:16, name:"塔",         en:"The Tower",          art:"🗼", up:{kw:"衝撃・崩壊・転換", tx:"突然の出来事で価値観が覆るかも。しかし崩壊の後には、より強固な土台を築くチャンスがあります。"}, rev:{kw:"回避・遅延・余波", tx:"危機を辛うじて回避、あるいは崩壊の余波が続く時。問題の先送りは避け、根本から見直しを。"} },
+    { n:17, name:"星",         en:"The Star",           art:"⭐", up:{kw:"希望・理想・癒し", tx:"暗闇に射す一筋の光。希望を持ち続けることで未来が明るく開けます。心が癒され、理想に近づく時。"}, rev:{kw:"失望・現実逃避・停滞", tx:"理想と現実の差に落胆しがち。夢見るだけでなく、地に足をつけた一歩が必要です。"} },
+    { n:18, name:"月",         en:"The Moon",           art:"🌕", up:{kw:"不安・幻想・潜在", tx:"物事がはっきりせず、不安や迷いが漂う時。直感を頼りに、隠れた真実を丁寧に見極めましょう。"}, rev:{kw:"回復・解明・安定", tx:"霧が晴れるように不安が和らぐ時。誤解や曖昧さが解消され、心が落ち着きを取り戻します。"} },
+    { n:19, name:"太陽",       en:"The Sun",            art:"☀", up:{kw:"成功・喜び・生命力", tx:"最高の幸運を告げるカード。明るいエネルギーに満ち、成功と喜び、そして祝福が訪れます。"}, rev:{kw:"停滞・空元気・遅れ", tx:"幸運は近いものの、少し陰りが。無理な明るさや見栄を張らず、素直な気持ちを大切に。"} },
+    { n:20, name:"審判",       en:"Judgement",          art:"📯", up:{kw:"復活・決断・目覚め", tx:"過去がよみがえり、再出発の時。大切な決断や和解のチャンス。眠っていた可能性が目を覚まします。"}, rev:{kw:"後悔・停滞・見送り", tx:"過去への執着やためらいがチャンスを逃す原因に。後悔を手放し、前を向く勇気を。"} },
+    { n:21, name:"世界",       en:"The World",          art:"🌍", up:{kw:"完成・達成・統合", tx:"一つのサイクルが見事に完成する時。努力が実を結び、心からの満足と達成感に包まれます。"}, rev:{kw:"未完・停滞・マンネリ", tx:"あと一歩で完成という所での停滞。惰性やマンネリを打破し、最後までやり遂げる意志を持って。"} },
+  ];
 
-    <div class="checkboxes">
-      <label class="checkbox-item">
-        <input type="checkbox" id="exp_hospital">
-        <span>介護・医療系（病院・保育・医療事務・相談）の経験あり<span class="amount">月+100円 × 経験年数</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" id="exp_shogai">
-        <span>障がい・発達支援（相談）の経験あり<span class="amount">月+100円 × 経験年数</span></span>
-      </label>
-    </div>
-    <div class="form-group" style="margin-top: 16px;">
-      <label for="leaderBonus">リーダー経験 / 大規模法人経験</label>
-      <select id="leaderBonus">
-        <option value="0">なし（0円）</option>
-        <option value="300">リーダー経験あり（+300円）</option>
-        <option value="500">中規模法人リーダー（+500円）</option>
-        <option value="1000">300名以上・一部上場企業等（+1,000円）</option>
-      </select>
-      <div class="info-box">看護・リハビリ職の上限は700円です</div>
-    </div>
-  </div>
-
-  <!-- ③ 保有資格 -->
-  <div class="card">
-    <h2>③ 保有資格（該当するものすべて選択）</h2>
-    <p style="font-size:0.82rem; color:#888; margin-bottom:12px;">※主とする業務に従事している場合のみ支給</p>
-    <div class="checkboxes">
-      <!-- 10,000円 -->
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="10000">
-        <span>介護福祉士<span class="amount">月+10,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="10000">
-        <span>社会福祉士<span class="amount">月+10,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="10000">
-        <span>精神保健福祉士<span class="amount">月+10,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="10000">
-        <span>臨床心理士・公認心理士<span class="amount">月+10,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="10000">
-        <span>准看護師（介護・児童・相談業務）<span class="amount">月+10,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="10000">
-        <span>保育士<span class="amount">月+10,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="10000">
-        <span>社会保険労務士<span class="amount">月+10,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="10000">
-        <span>日商簿記1級<span class="amount">月+10,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="10000">
-        <span>酒類販売・危険物取扱認定<span class="amount">月+10,000円</span></span>
-      </label>
-      <!-- 5,000円 -->
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="5000">
-        <span>正看護師<span class="amount">月+5,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="5000">
-        <span>PT・OT・ST・歯科衛生士<span class="amount">月+5,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="5000">
-        <span>ケアマネジャー<span class="amount">月+5,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="5000">
-        <span>教諭免許<span class="amount">月+5,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="5000">
-        <span>実務者研修（ヘルパー1級）<span class="amount">月+5,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="5000">
-        <span>栄養士<span class="amount">月+5,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="5000">
-        <span>管理栄養士（特養以外）<span class="amount">月+5,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="10000">
-        <span>管理栄養士（特養勤務）<span class="amount">月+10,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="5000">
-        <span>衛生管理者<span class="amount">月+5,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="5000">
-        <span>日商簿記2級<span class="amount">月+5,000円</span></span>
-      </label>
-      <!-- 3,000円 -->
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="3000">
-        <span>初任者研修（ヘルパー2級）<span class="amount">月+3,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="3000">
-        <span>児童指導員任用資格<span class="amount">月+3,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="3000">
-        <span>准看護師（看護業務従事）<span class="amount">月+3,000円</span></span>
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="3000">
-        <span>喀痰吸引等研修（対象5人以上）<span class="amount">月+3,000円</span></span>
-      </label>
-      <!-- 2,500円 -->
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="2500">
-        <span>ユニットリーダー<span class="amount">月+2,500円</span></span>
-      </label>
-      <!-- 1,500円 -->
-      <label class="checkbox-item">
-        <input type="checkbox" data-qual="1500">
-        <span>喀痰吸引等研修（対象5人未満）<span class="amount">月+1,500円</span></span>
-      </label>
-    </div>
-  </div>
-
-  <!-- ④ 各種手当 -->
-  <div class="card">
-    <h2>④ 各種手当</h2>
-
-    <div id="henso-section" class="form-group">
-      <label for="hensokin">変則勤務手当（入所事業所）</label>
-      <select id="hensokin">
-        <option value="0">0円（なし）</option>
-        <option value="2000">2,000円</option>
-        <option value="3000">3,000円</option>
-        <option value="6000">6,000円</option>
-        <option value="9000">9,000円</option>
-        <option value="12000">12,000円</option>
-      </select>
-    </div>
-
-    <div id="sougei-section" class="form-group hidden">
-      <label for="sougei">送迎・業務手当（通所事業所）</label>
-      <select id="sougei">
-        <option value="0">0円（なし）</option>
-        <option value="3000">3,000円</option>
-        <option value="5000">5,000円</option>
-        <option value="7000">7,000円</option>
-        <option value="10000">10,000円（上限）</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label>住居手当</label>
-      <label class="checkbox-item" style="display:flex;">
-        <input type="checkbox" id="jukyo_flag">
-        <span>支給予定あり（α円・上限15,000円）
-          <span style="font-size:0.78rem; color:#888; display:block;">賃貸物件・世帯主であること（家賃証明等必要）</span>
-        </span>
-      </label>
-    </div>
-
-    <div class="form-group">
-      <label for="spouse">配偶者扶養義務</label>
-      <select id="spouse">
-        <option value="0">なし（0円）</option>
-        <option value="4000">あり（+4,000円）</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label for="childOver16">扶養親族（16歳以上・満22歳まで）の人数</label>
-      <input type="number" id="childOver16" min="0" max="10" value="0">
-      <div class="info-box">16歳以上：10,000円 × 人数</div>
-    </div>
-
-    <div class="form-group">
-      <label for="childUnder16">扶養親族（16歳未満）の人数</label>
-      <input type="number" id="childUnder16" min="0" max="10" value="0">
-      <div class="info-box">16歳未満：5,000円 × 人数</div>
-    </div>
-
-    <div class="form-group">
-      <label>配偶者なし職員の扶養親族（1名まで）</label>
-      <label class="checkbox-item" style="display:flex;">
-        <input type="checkbox" id="spouseless_dep">
-        <span>該当あり（+11,000円）
-          <span style="font-size:0.78rem; color:#888; display:block;">配偶者のいない職員の最初の扶養親族1名</span>
-        </span>
-      </label>
-    </div>
-
-    <div class="form-group">
-      <label for="otherDep">その他扶養親族の人数</label>
-      <input type="number" id="otherDep" min="0" max="10" value="0">
-      <div class="info-box">その他：1,500円 × 人数</div>
-    </div>
-  </div>
-
-  <!-- ⑤ 交通費 -->
-  <div class="card">
-    <h2>⑤ 交通費</h2>
-
-    <div class="form-group">
-      <label for="transportType">通勤手段</label>
-      <select id="transportType" onchange="onTransportChange()">
-        <option value="none">徒歩・自転車（交通費支給なし）</option>
-        <option value="transit">電車・バス</option>
-        <option value="car">車（距離区分）</option>
-        <option value="bike">バイク（車の半額）</option>
-      </select>
-    </div>
-
-    <div id="transport-transit" class="transport-detail">
-      <div class="transport-row">
-        <div class="form-group">
-          <label for="transitCost">月額実費（円）</label>
-          <input type="number" id="transitCost" min="0" max="100000" value="0" placeholder="例：8500">
-        </div>
-        <div class="form-group">
-          <label for="transitCap">支給上限</label>
-          <select id="transitCap">
-            <option value="15000">15,000円</option>
-            <option value="20000" selected>20,000円</option>
-            <option value="25000">25,000円</option>
-            <option value="30000">30,000円</option>
-            <option value="999999">上限なし（実費全額）</option>
-          </select>
-        </div>
-      </div>
-      <div class="info-box">支給額 ＝ 月額実費と上限の低い方</div>
-    </div>
-
-    <div id="transport-car" class="transport-detail">
-      <div class="form-group">
-        <label for="carDistance">通勤距離</label>
-        <select id="carDistance">
-          <option value="0">片道2km未満（支給なし）</option>
-          <option value="2100">片道2km〜5km未満（2,100円/月）</option>
-          <option value="4200">片道5km〜10km未満（4,200円/月）</option>
-          <option value="7100">片道10km〜15km未満（7,100円/月）</option>
-          <option value="10000">片道15km〜20km未満（10,000円/月）</option>
-          <option value="12900">片道20km〜25km未満（12,900円/月）</option>
-          <option value="15800">片道25km〜30km未満（15,800円/月）</option>
-          <option value="18700">片道30km〜35km未満（18,700円/月）</option>
-          <option value="21500">片道35km〜40km未満（21,500円/月）</option>
-          <option value="24400">片道40km以上（24,400円/月）</option>
-        </select>
-      </div>
-      <div class="info-box" id="car-note">片道距離で選択してください。バイクは上記の半額を支給。</div>
-    </div>
-  </div>
-
-  <button class="btn" onclick="calculate()">給与を算出する</button>
-
-  <!-- 結果エリア -->
-  <div class="card" id="result">
-    <h2>算出結果</h2>
-
-    <div class="result-total">
-      <div class="label">採用時 月給目安（総支給額）</div>
-      <div class="amount" id="totalAmount">¥0</div>
-      <div class="sub">月給／総支給額ベース</div>
-    </div>
-
-    <div class="breakdown">
-      <div class="breakdown-row">
-        <span class="key">基礎月給</span>
-        <span class="val" id="br-base">¥0</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="key">ベースアップ手当（自動適用）</span>
-        <span class="val baseup" id="br-baseup">+¥0</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="key">経験加算</span>
-        <span class="val plus" id="br-exp">+¥0</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="key">資格手当</span>
-        <span class="val plus" id="br-qual">+¥0</span>
-      </div>
-      <div class="breakdown-row" id="br-henso-row">
-        <span class="key">変則勤務手当</span>
-        <span class="val plus" id="br-henso">+¥0</span>
-      </div>
-      <div class="breakdown-row" id="br-sougei-row">
-        <span class="key">送迎・業務手当</span>
-        <span class="val plus" id="br-sougei">+¥0</span>
-      </div>
-      <div class="breakdown-row" id="br-jukyo-row" style="display:none;">
-        <span class="key">住居手当</span>
-        <span class="val plus" id="br-jukyo" style="color:#2980b9;">α（上限15,000円）</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="key">扶養手当</span>
-        <span class="val plus" id="br-fuyo">+¥0</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="key">交通費</span>
-        <span class="val transport" id="br-transport">+¥0</span>
-      </div>
-      <div class="breakdown-row total-row">
-        <span class="key">合計（月給）</span>
-        <span class="val" id="br-total">¥0</span>
-      </div>
-      <div class="breakdown-row" id="br-yako-row" style="display:none;">
-        <span class="key" style="color:#999;">夜勤手当（参考）</span>
-        <span class="val" style="color:#999; font-size:0.85rem;">4,800円〜7,000円 × 夜勤日数</span>
-      </div>
-      <div class="breakdown-row" id="br-special-row" style="display:none;">
-        <span class="key" style="color:#999;">特別手当（参考）</span>
-        <span class="val" style="color:#999; font-size:0.85rem;">3,000円〜3,500円 × 日数（12/31〜1/2出勤・入所施設のみ）</span>
-      </div>
-    </div>
-
-    <div class="range-note" id="rangeNote"></div>
-
-    <button class="btn-reset" onclick="resetForm()">再計算する</button>
-    <button class="btn" style="margin-top:12px;" onclick="window.print()">印刷・PDF保存</button>
-  </div>
-
-</div>
-
-<script>
-  const BASE_SALARY = {
-    direct_nyusho:     191100,
-    direct_tusho:      185900,
-    direct_jido:       185900,
-    junkangofu:        192500,
-    kangofu:           205000,
-    rehab:             200000,
-    caremanager:       220000,
-    service_manager:   228000,
-    childdev_manager:  230000,
-    soudan_specialist: 200000,
-    soudan_general:    181400,
-    career:            225000,
-    jimu_general:      181400,
-    jimu_keiri:        187200,
-    kanrieiyoshi:      181400,
-    eiyoshi:           181400,
+  /* ============ スプレッド定義 ============ */
+  const SPREADS = {
+    one:   { icon:"🔮", name:"今日の運勢", desc:"1枚引き", count:1,
+             positions:["今日のあなたへ"] },
+    three: { icon:"🌗", name:"三枚引き", desc:"過去・現在・未来", count:3,
+             positions:["過去","現在","未来"] },
+    cross: { icon:"✳", name:"ヘキサ", desc:"状況を多面的に", count:5,
+             positions:["現状","課題","本音","周囲","結末"] },
   };
 
-  // ベースアップ手当区分
-  const JOB_CATEGORY = {
-    direct_nyusho: 'direct', direct_tusho: 'direct', direct_jido: 'direct',
-    junkangofu: 'direct',
-    kangofu: 'nursing_rehab', rehab: 'nursing_rehab', caremanager: 'nursing_rehab',
-    service_manager: 'nursing_rehab', childdev_manager: 'nursing_rehab',
-    soudan_specialist: 'nursing_rehab',
-    soudan_general: 'indirect', career: 'indirect', jimu_general: 'indirect',
-    jimu_keiri: 'indirect', kanrieiyoshi: 'indirect', eiyoshi: 'indirect',
-  };
+  let selectedSpread = "three";
 
-  const BASEUP = { direct: 19000, nursing_rehab: 10000, indirect: 8000 };
-
-  // 経験加算：月額 × 年数（同種他企業経験、上限10年）
-  const EXP_PER_YEAR = { direct: 1000, nursing_rehab: 2000, indirect: 1000 };
-
-  // 10年以上ボーナス
-  const TEN_YEAR_BONUS = { direct: 300, nursing_rehab: 100, indirect: 100 };
-
-  function onJobChange() {
-    const job = document.getElementById('jobType').value;
-    const isTusho  = ['direct_tusho', 'direct_jido'].includes(job);
-    document.getElementById('henso-section').classList.remove('hidden');
-    document.getElementById('sougei-section').classList.toggle('hidden', !isTusho);
-  }
-
-  function onTransportChange() {
-    const val = document.getElementById('transportType').value;
-    document.getElementById('transport-transit').classList.toggle('active', val === 'transit');
-    const showCar = val === 'car' || val === 'bike';
-    document.getElementById('transport-car').classList.toggle('active', showCar);
-  }
-
-  function getTransportAmount() {
-    const type = document.getElementById('transportType').value;
-    if (type === 'transit') {
-      const cost = parseInt(document.getElementById('transitCost').value) || 0;
-      const cap  = parseInt(document.getElementById('transitCap').value) || 20000;
-      return Math.min(cost, cap);
+  /* ---- 背景の星 ---- */
+  (function makeStars(){
+    const box = document.getElementById('stars');
+    const frag = document.createDocumentFragment();
+    for (let i=0;i<70;i++){
+      const s = document.createElement('div');
+      s.className = 'star';
+      s.style.left = Math.random()*100 + '%';
+      s.style.top = Math.random()*100 + '%';
+      s.style.setProperty('--tw', (2+Math.random()*3).toFixed(1)+'s');
+      s.style.animationDelay = (Math.random()*3).toFixed(1)+'s';
+      const sz = (1+Math.random()*2).toFixed(1);
+      s.style.width = sz+'px'; s.style.height = sz+'px';
+      frag.appendChild(s);
     }
-    if (type === 'car' || type === 'bike') {
-      const base = parseInt(document.getElementById('carDistance').value) || 0;
-      return type === 'bike' ? Math.floor(base / 2) : base;
+    box.appendChild(frag);
+  })();
+
+  /* ---- スプレッド選択UI ---- */
+  const spreadsEl = document.getElementById('spreads');
+  Object.entries(SPREADS).forEach(([key, sp]) => {
+    const b = document.createElement('button');
+    b.className = 'spread-btn' + (key===selectedSpread ? ' active' : '');
+    b.dataset.key = key;
+    b.innerHTML = `<span class="ic">${sp.icon}</span><span class="nm">${sp.name}</span><span class="ds">${sp.desc}</span>`;
+    b.addEventListener('click', () => {
+      selectedSpread = key;
+      document.querySelectorAll('.spread-btn').forEach(x => x.classList.toggle('active', x.dataset.key===key));
+    });
+    spreadsEl.appendChild(b);
+  });
+
+  /* ---- シャッフル & 抽選 ---- */
+  function drawCards(count){
+    const idx = [...Array(DECK.length).keys()];
+    // Fisher-Yates
+    for (let i=idx.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [idx[i],idx[j]] = [idx[j],idx[i]];
     }
-    return 0;
+    return idx.slice(0,count).map(i => ({
+      card: DECK[i],
+      reversed: Math.random() < 0.5
+    }));
   }
 
-  function fmt(n) { return '¥' + n.toLocaleString('ja-JP'); }
+  function totalFortune(draws){
+    // 正位置=1, 逆位置=-1 の合計でざっくり総合運を判定
+    const score = draws.reduce((s,d)=> s + (d.reversed ? -1 : 1), 0);
+    if (score >= draws.length) return {t:"大吉", msg:"星々があなたを強く後押ししています。自信を持って進んでください。"};
+    if (score > 0)             return {t:"吉",   msg:"追い風が吹いています。前向きな行動が良い流れを呼びます。"};
+    if (score === 0)           return {t:"中吉", msg:"光と影が拮抗する時。焦らず、バランスを意識して過ごしましょう。"};
+    if (score > -draws.length) return {t:"小吉", msg:"少し慎重さが求められる時。立ち止まり、内面と向き合ってみて。"};
+    return {t:"凶（転機）", msg:"試練は変容の入口。手放しと見直しが、次の扉を開く鍵になります。"};
+  }
 
-  function calculate() {
-    const job = document.getElementById('jobType').value;
-    if (!job) { alert('職種を選択してください'); return; }
+  const drawBtn = document.getElementById('drawBtn');
+  const resultEl = document.getElementById('result');
 
-    const cat       = JOB_CATEGORY[job];
-    const base      = BASE_SALARY[job];
-    const baseup    = BASEUP[cat];
-    const expYears  = Math.min(parseInt(document.getElementById('expYears').value) || 0, 10);
-    const totalExp  = parseInt(document.getElementById('totalExpYears').value) || 0;
+  drawBtn.addEventListener('click', () => {
+    const sp = SPREADS[selectedSpread];
+    const question = document.getElementById('question').value.trim();
+    const draws = drawCards(sp.count);
+    render(sp, draws, question);
+    drawBtn.textContent = "もう一度引く";
+    resultEl.scrollIntoView({behavior:'smooth', block:'start'});
+  });
 
-    // 経験加算
-    const selectedRate = parseInt(document.querySelector('input[name="expRate"]:checked').value) || 1000;
-    let expBonus    = selectedRate * expYears;
-    if (totalExp >= 10) expBonus += TEN_YEAR_BONUS[cat];
-    if (document.getElementById('exp_hospital').checked) expBonus += 100 * expYears;
-    if (document.getElementById('exp_shogai').checked)   expBonus += 100 * expYears;
-    const rawLeader = parseInt(document.getElementById('leaderBonus').value) || 0;
-    // 看護・リハビリは上限700円
-    const leaderBonus = (cat === 'nursing_rehab') ? Math.min(rawLeader, 700) : rawLeader;
-    expBonus += leaderBonus;
+  function render(sp, draws, question){
+    resultEl.innerHTML = '';
 
-    // 資格手当
-    let qualBonus = 0;
-    document.querySelectorAll('[data-qual]:checked').forEach(cb => {
-      qualBonus += parseInt(cb.dataset.qual) || 0;
+    const title = document.createElement('div');
+    title.className = 'reading-title';
+    title.textContent = `${sp.icon} ${sp.name} の結果`;
+    resultEl.appendChild(title);
+
+    if (question){
+      const q = document.createElement('div');
+      q.className = 'reading-q';
+      q.textContent = `「${question}」`;
+      resultEl.appendChild(q);
+    }
+
+    const panel = document.createElement('section');
+    panel.className = 'panel';
+
+    const board = document.createElement('div');
+    board.className = 'board';
+    panel.appendChild(board);
+
+    const cardEls = [];
+
+    draws.forEach((d, i) => {
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+
+      const pos = document.createElement('div');
+      pos.className = 'pos';
+      pos.textContent = sp.positions[i] || '';
+      slot.appendChild(pos);
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.animationDelay = (i*0.12)+'s';
+      const ori = d.reversed ? 'rev' : 'up';
+      const oriLabel = d.reversed ? '逆位置' : '正位置';
+      card.innerHTML = `
+        <div class="card-inner">
+          <div class="face back"><span class="bk-emblem">✷</span></div>
+          <div class="face front ${d.reversed?'reversed':''}">
+            <div class="fr-num">ARCANA ${String(d.card.n).padStart(2,'0')}</div>
+            <div class="fr-art">${d.card.art}</div>
+            <div class="fr-name">${d.card.name}</div>
+            <div class="fr-en">${d.card.en}</div>
+            <div class="fr-ori ${ori}">${oriLabel}</div>
+          </div>
+        </div>`;
+      slot.appendChild(card);
+
+      const meaning = document.createElement('div');
+      meaning.className = 'meaning';
+      const m = d.reversed ? d.card.rev : d.card.up;
+      meaning.innerHTML = `<div class="m-kw">🔑 ${m.kw}</div><div class="m-tx">${m.tx}</div>`;
+      slot.appendChild(meaning);
+
+      board.appendChild(slot);
+      cardEls.push({card, meaning});
     });
 
-    // 各種手当
-    const henso   = parseInt(document.getElementById('hensokin').value) || 0;
-    const sougei  = parseInt(document.getElementById('sougei').value) || 0;
-    const jukyoFlag = document.getElementById('jukyo_flag').checked;
-    const spouse       = parseInt(document.getElementById('spouse').value) || 0;
-    const childO       = (parseInt(document.getElementById('childOver16').value) || 0) * 10000;
-    const childU       = (parseInt(document.getElementById('childUnder16').value) || 0) * 5000;
-    const spouselessDep = document.getElementById('spouseless_dep').checked ? 11000 : 0;
-    const otherDep     = (parseInt(document.getElementById('otherDep').value) || 0) * 1500;
-    const fuyo         = spouse + childO + childU + spouselessDep + otherDep;
-    const transport = getTransportAmount();
+    // 総合メッセージ
+    const summary = document.createElement('div');
+    summary.className = 'summary';
+    const f = totalFortune(draws);
+    summary.innerHTML = `<h3>◇ 総合運：${f.t} ◇</h3><p>${f.msg}</p>`;
+    panel.appendChild(summary);
 
-    const total = base + baseup + expBonus + qualBonus
-                + henso + sougei + fuyo + transport;
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const reveal = document.createElement('button');
+    reveal.className = 'ghost-btn';
+    reveal.textContent = 'すべてめくる';
+    reveal.addEventListener('click', () => cardEls.forEach(c => flip(c)));
+    const again = document.createElement('button');
+    again.className = 'ghost-btn';
+    again.textContent = '↻ 引き直す';
+    again.addEventListener('click', () => drawBtn.click());
+    actions.append(reveal, again);
+    panel.appendChild(actions);
 
-    const isNyusho = ['direct_nyusho', 'junkangofu', 'service_manager', 'childdev_manager'].includes(job);
-    const isTusho  = ['direct_tusho', 'direct_jido'].includes(job);
+    const hint = document.createElement('p');
+    hint.className = 'hint';
+    hint.textContent = 'カードをタップしてめくり、メッセージを受け取りましょう。';
+    panel.appendChild(hint);
 
-    document.getElementById('br-base').textContent      = fmt(base);
-    document.getElementById('br-baseup').textContent    = '+' + fmt(baseup);
-    document.getElementById('br-exp').textContent       = '+' + fmt(expBonus);
-    document.getElementById('br-qual').textContent      = '+' + fmt(qualBonus);
-    document.getElementById('br-henso').textContent     = '+' + fmt(henso);
-    document.getElementById('br-sougei').textContent    = '+' + fmt(sougei);
-    document.getElementById('br-fuyo').textContent      = '+' + fmt(fuyo);
-    document.getElementById('br-transport').textContent = '+' + fmt(transport);
-    document.getElementById('br-jukyo-row').style.display = jukyoFlag ? '' : 'none';
-    document.getElementById('br-total').textContent     = fmt(total) + (jukyoFlag ? ' ＋ α' : '');
-    document.getElementById('totalAmount').textContent  = fmt(total) + (jukyoFlag ? ' ＋ α' : '');
-    document.getElementById('br-henso-row').style.display  = '';
-    document.getElementById('br-sougei-row').style.display = isTusho  ? '' : 'none';
-    document.getElementById('br-yako-row').style.display   = isNyusho ? '' : 'none';
-    document.getElementById('br-special-row').style.display = isNyusho ? '' : 'none';
+    resultEl.appendChild(panel);
 
-    const low  = fmt(Math.round(total * 0.95));
-    const high = fmt(Math.round(total * 1.08));
-    document.getElementById('rangeNote').innerHTML =
-      `<strong>提示レンジ目安：</strong>${low} 〜 ${high}<br>` +
-      `<span style="font-size:0.8rem;">※本人のスキル・面接評価・施設規模・加算状況により±5〜8%の調整を推奨します。</span>`;
+    // 個別タップでめくる
+    cardEls.forEach(c => {
+      c.card.addEventListener('click', () => flip(c));
+    });
 
-    document.getElementById('result').style.display = 'block';
-    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+    // 少し遅れて自動で1枚ずつめくる演出
+    cardEls.forEach((c, i) => {
+      setTimeout(() => flip(c), 700 + i*450);
+    });
   }
 
-  function resetForm() {
-    document.getElementById('result').style.display = 'none';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  function flip(c){
+    if (c.card.classList.contains('flipped')) return;
+    c.card.classList.add('flipped');
+    setTimeout(() => c.meaning.classList.add('show'), 500);
+    // 全部めくれたら総合運を表示
+    setTimeout(() => {
+      const all = [...document.querySelectorAll('.card')];
+      if (all.every(x => x.classList.contains('flipped'))){
+        const s = document.querySelector('.summary');
+        if (s) s.classList.add('show');
+      }
+    }, 550);
   }
-</script>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js');
+
+  /* ---- Service Worker ---- */
+  if ('serviceWorker' in navigator){
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
   }
-</script>
+  </script>
 </body>
 </html>

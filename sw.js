@@ -1,4 +1,4 @@
-const CACHE = 'kyoseikai-v4';
+const CACHE = 'tarot-v1';
 const FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {

@@ -1,17 +1,20 @@
 {
-  "name": "採用査定システム｜慶生会",
-  "short_name": "給与査定",
-  "description": "令和8年度 採用既卒正職員の月給査定ツール",
-  "start_url": "/salary-assessment/",
+  "name": "星読みタロット｜Mystic Tarot",
+  "short_name": "タロット",
+  "description": "大アルカナ22枚で占う本格タロット占い。今日の運勢・三枚引き・多角スプレッドに対応。",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#f4f6f9",
-  "theme_color": "#1a5276",
+  "orientation": "portrait",
+  "background_color": "#0b0820",
+  "theme_color": "#1a1440",
   "lang": "ja",
   "icons": [
     {
       "src": "icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }
