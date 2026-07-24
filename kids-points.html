@@ -98,8 +98,8 @@
   .points{font-size:40px; font-weight:900; line-height:1; margin:8px 0 2px;}
   .points small{font-size:16px; font-weight:700;}
   .goalrow{display:flex; align-items:center; gap:6px; margin-top:8px;}
-  .goalbar{flex:1; height:16px; background:rgba(255,255,255,.6); border-radius:10px; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,.12);}
-  .goalbar > i{display:block; height:100%; background:rgba(0,0,0,.28); border-radius:10px; transition:width .6s cubic-bezier(.34,1.4,.5,1);}
+  .goalbar{flex:1; height:18px; background:rgba(255,255,255,.9); border-radius:10px; overflow:hidden; box-shadow:inset 0 1px 3px rgba(0,0,0,.2);}
+  .goalbar > i{display:block; height:100%; border-radius:10px; transition:width .6s cubic-bezier(.34,1.4,.5,1); box-shadow:inset 0 -3px 0 rgba(0,0,0,.12);}
   .goalgift{font-size:18px;}
   .goaltext{font-size:13px; margin-top:6px; font-weight:bold; opacity:.9;}
   .goaltext b{font-size:15px;}
@@ -304,7 +304,7 @@
           '<div class="kname">'+k.name+'</div>'+
         '</div>'+
         '<div class="points" id="pts-'+k.id+'">'+p+'<small> てん</small></div>'+
-        '<div class="goalrow"><div class="goalbar"><i style="width:'+pct+'%"></i></div><span class="goalgift">'+(p>=state.goal?'🎉':'🎁')+'</span></div>'+
+        '<div class="goalrow"><div class="goalbar"><i style="width:'+pct+'%; background:'+k.ink+'"></i></div><span class="goalgift">'+(p>=state.goal?'🎉':'🎁')+'</span></div>'+
         '<div class="goaltext">'+(p>=state.goal? '🎉 ごほうび ゲット！（'+p+' / '+state.goal+'）' : 'ごほうびまで あと <b>'+remain+'</b> てん（'+Math.max(0,p)+' / '+state.goal+'）')+'</div>'+
         '<div class="ctrl">'+
           '<button class="btn good" data-add="10" data-id="'+k.id+'">😊 いいこと +10</button>'+
@@ -457,11 +457,25 @@
   });
 
   document.getElementById("resetAll").addEventListener("click", function(){
-    if(confirm("ぜんいんのポイントを 0 にもどしますか？（りれきも けします）")){
+    askConfirm("ぜんいんのポイントを 0 に もどしますか？<br>（りれきも けします）", function(){
       state.kids.forEach(function(k){ state.points[k.id]=0; });
       state.history=[]; save(); render(); toast("0に もどしました");
-    }
+    });
   });
+
+  // アプリ内かくにん（公開ページでは標準のconfirmが使えないため自作）
+  function askConfirm(msg, onYes){
+    var bg=document.createElement("div");
+    bg.className="modal-bg show";
+    bg.innerHTML='<div class="modal"><h3>かくにん</h3>'+
+      '<p style="font-size:15px;line-height:1.6;margin:0 0 18px;">'+msg+'</p>'+
+      '<div class="row"><button class="mini g" data-no>やめる</button>'+
+      '<button class="mini" data-yes style="background:#e03131;color:#fff;">はい</button></div></div>';
+    document.body.appendChild(bg);
+    bg.querySelector("[data-no]").addEventListener("click", function(){ bg.remove(); });
+    bg.querySelector("[data-yes]").addEventListener("click", function(){ bg.remove(); onYes(); });
+    bg.addEventListener("click", function(e){ if(e.target===bg) bg.remove(); });
+  }
 
   /* かんたんトースト */
   function toast(msg){
