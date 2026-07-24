@@ -44,29 +44,41 @@
     padding:16px 14px 10px; margin:12px 0 18px;
   }
   .chart-title{font-size:15px; font-weight:bold; color:#e8590c; margin:0 0 10px; text-align:center;}
-  .chart{
-    display:flex; align-items:flex-end; justify-content:space-around;
-    gap:10px; height:220px; position:relative; padding-bottom:2px;
+  .chart{ position:relative; }
+  .plot{
+    position:relative; display:flex; align-items:flex-end; gap:12px;
+    height:200px; padding:0 6px;
+  }
+  .goal-line{
+    position:absolute; left:6px; right:6px; border-top:2px dashed #ffb703; z-index:3;
+    pointer-events:none;
+  }
+  .goal-line span{
+    position:absolute; right:2px; top:-10px; background:#fff; color:#e8590c;
+    font-size:11px; font-weight:bold; padding:1px 7px; border-radius:8px;
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
   }
   .zero-line{
-    position:absolute; left:0; right:0; height:2px; background:#e9ecef; z-index:0;
+    position:absolute; left:6px; right:6px; border-top:2px solid #e9ecef; z-index:2;
+    pointer-events:none;
   }
   .bar-col{
-    flex:1; display:flex; flex-direction:column; align-items:center;
-    height:100%; justify-content:flex-end; position:relative; z-index:1;
+    flex:1; height:100%; display:flex; align-items:flex-end;
+    position:relative; z-index:1;
   }
-  .bar-num{font-size:20px; font-weight:800; margin-bottom:4px;}
-  .bar-fillwrap{
-    width:60%; max-width:64px; height:100%;
-    display:flex; flex-direction:column; justify-content:center;
+  .bar-grow{
+    width:100%; border-radius:14px 14px 5px 5px; position:relative;
+    border:2px solid; min-height:8px;
+    transition:height .7s cubic-bezier(.34,1.4,.5,1);
+    box-shadow:inset 0 -4px 0 rgba(0,0,0,.06);
   }
-  .bar{
-    width:100%; border-radius:12px 12px 0 0;
-    transition:height .5s cubic-bezier(.34,1.56,.64,1);
-    min-height:6px; box-shadow:inset 0 -3px 0 rgba(0,0,0,.06);
+  .bar-num{
+    position:absolute; top:-23px; left:0; right:0; text-align:center;
+    font-size:18px; font-weight:800; white-space:nowrap;
   }
-  .bar.neg{border-radius:0 0 12px 12px; box-shadow:inset 0 3px 0 rgba(0,0,0,.06);}
-  .bar-name{font-size:15px; font-weight:bold; margin-top:8px;}
+  .labels{ display:flex; gap:12px; padding:8px 6px 0; }
+  .lbl{ flex:1; text-align:center; }
+  .bar-name{font-size:15px; font-weight:bold; margin-top:2px;}
   .bar-emoji{font-size:22px;}
 
   /* ===== 子カード ===== */
@@ -85,9 +97,12 @@
   .kid .kname{font-size:19px; font-weight:800;}
   .points{font-size:40px; font-weight:900; line-height:1; margin:8px 0 2px;}
   .points small{font-size:16px; font-weight:700;}
-  .goalbar{height:12px; background:rgba(255,255,255,.55); border-radius:8px; overflow:hidden; margin-top:8px;}
-  .goalbar > i{display:block; height:100%; background:rgba(0,0,0,.18); border-radius:8px; transition:width .5s ease;}
-  .goaltext{font-size:12px; margin-top:5px; font-weight:bold; opacity:.85;}
+  .goalrow{display:flex; align-items:center; gap:6px; margin-top:8px;}
+  .goalbar{flex:1; height:16px; background:rgba(255,255,255,.6); border-radius:10px; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,.12);}
+  .goalbar > i{display:block; height:100%; background:rgba(0,0,0,.28); border-radius:10px; transition:width .6s cubic-bezier(.34,1.4,.5,1);}
+  .goalgift{font-size:18px;}
+  .goaltext{font-size:13px; margin-top:6px; font-weight:bold; opacity:.9;}
+  .goaltext b{font-size:15px;}
 
   /* ママモードの操作ボタン */
   .kid .ctrl{display:none; gap:8px; margin-top:12px;}
@@ -289,8 +304,8 @@
           '<div class="kname">'+k.name+'</div>'+
         '</div>'+
         '<div class="points" id="pts-'+k.id+'">'+p+'<small> てん</small></div>'+
-        '<div class="goalbar"><i style="width:'+pct+'%"></i></div>'+
-        '<div class="goaltext">'+(p>=state.goal? '🎉 ごほうび ゲット！' : 'ごほうびまで あと '+remain+' てん')+'</div>'+
+        '<div class="goalrow"><div class="goalbar"><i style="width:'+pct+'%"></i></div><span class="goalgift">'+(p>=state.goal?'🎉':'🎁')+'</span></div>'+
+        '<div class="goaltext">'+(p>=state.goal? '🎉 ごほうび ゲット！（'+p+' / '+state.goal+'）' : 'ごほうびまで あと <b>'+remain+'</b> てん（'+Math.max(0,p)+' / '+state.goal+'）')+'</div>'+
         '<div class="ctrl">'+
           '<button class="btn good" data-add="10" data-id="'+k.id+'">😊 いいこと +10</button>'+
           '<button class="btn bad"  data-add="-10" data-id="'+k.id+'">😠 ちょっかい −10</button>'+
@@ -300,30 +315,33 @@
   }
 
   function renderChart(){
-    chartEl.innerHTML="";
     var vals=state.kids.map(function(k){ return state.points[k.id]; });
-    var maxAbs=Math.max(10, Math.max.apply(null, vals.map(Math.abs)));
-    var hasNeg=vals.some(function(v){return v<0;});
-    // ゼロ線の位置（負がある時は中央寄り）
-    var line=document.createElement("div");
-    line.className="zero-line";
-    line.style.bottom=(hasNeg? 45 : 22)+"%";
-    chartEl.appendChild(line);
+    var maxV=Math.max.apply(null, vals);
+    // 0 を土台に、🎁ごほうびに向かって上へ伸びる
+    var topV=Math.max(state.goal, maxV, 10);
+    var range=topV*1.18;                    // 上に少し余白（数字が入る）
 
+    var goalPct=state.goal/range*100;
+
+    var html='<div class="plot">';
+    html+='<div class="goal-line" style="bottom:'+goalPct+'%"><span>🎁 ごほうび '+state.goal+'</span></div>';
     state.kids.forEach(function(k){
       var v=state.points[k.id];
-      var col=document.createElement("div");
-      col.className="bar-col";
-      var avail = hasNeg ? 45 : 76;               // ％で使える高さ
-      var h = Math.abs(v)/maxAbs*avail;
-      var bar='<div class="bar'+(v<0?' neg':'')+'" style="height:'+h+'%; background:'+k.bg+'; border:2px solid '+k.ink+'33;"></div>';
-      col.innerHTML=
-        '<div class="bar-num" style="color:'+k.ink+'">'+v+'</div>'+
-        '<div class="bar-fillwrap" style="justify-content:'+(v<0?'flex-start':'flex-end')+'">'+bar+'</div>'+
-        '<div class="bar-emoji">'+k.emoji+'</div>'+
-        '<div class="bar-name" style="color:'+k.ink+'">'+k.name+'</div>';
-      chartEl.appendChild(col);
+      var pct= v>0 ? Math.max(3, v/range*100) : 3;   // マイナスは小さなかたまり
+      var numColor = v<0 ? "#e03131" : k.ink;
+      html+='<div class="bar-col">'+
+              '<div class="bar-grow" style="height:'+pct+'%; background:'+k.bg+'; border-color:'+k.ink+'55;">'+
+                '<span class="bar-num" style="color:'+numColor+'">'+v+'</span>'+
+              '</div>'+
+            '</div>';
     });
+    html+='</div><div class="labels">';
+    state.kids.forEach(function(k){
+      html+='<div class="lbl"><div class="bar-emoji">'+k.emoji+'</div>'+
+            '<div class="bar-name" style="color:'+k.ink+'">'+k.name+'</div></div>';
+    });
+    html+='</div>';
+    chartEl.innerHTML=html;
   }
 
   function nameOf(id){ var k=state.kids.filter(function(x){return x.id===id;})[0]; return k?k.name:id; }
@@ -388,12 +406,13 @@
   var pwInput=document.getElementById("pwInput");
   var pwErr=document.getElementById("pwErr");
   var pwTitle=document.getElementById("pwTitle");
-  var pwMode="enter"; // enter | new1 | new2
+  var pwMode="enter"; // enter | curr | new1 | new2
   var newPwTmp="";
 
   function openPw(mode){
     pwMode=mode; pwErr.textContent=""; pwInput.value="";
     pwTitle.textContent = mode==="enter" ? "パスワードを いれてね"
+      : mode==="curr" ? "今の パスワードを いれてね"
       : mode==="new1" ? "あたらしい パスワード"
       : "もういちど いれてね";
     pwModal.classList.add("show");
@@ -414,6 +433,9 @@
     if(pwMode==="enter"){
       if(v===state.password){ closePw(); enterMom(); }
       else { pwErr.textContent="ちがうよ。もういちど。"; pwInput.value=""; pwInput.focus(); }
+    } else if(pwMode==="curr"){
+      if(v===state.password){ openPw("new1"); }
+      else { pwErr.textContent="今のパスワードが ちがいます。"; pwInput.value=""; pwInput.focus(); }
     } else if(pwMode==="new1"){
       if(v.length<2){ pwErr.textContent="2もじ いじょう にしてね"; return; }
       newPwTmp=v; openPw("new2");
@@ -426,7 +448,7 @@
   function enterMom(){ document.body.classList.add("mom"); render(); window.scrollTo(0,0); }
   function exitMom(){ document.body.classList.remove("mom"); render(); }
   document.getElementById("exitMom").addEventListener("click", exitMom);
-  document.getElementById("changePw").addEventListener("click", function(){ openPw("new1"); });
+  document.getElementById("changePw").addEventListener("click", function(){ openPw("curr"); });
 
   document.getElementById("saveGoal").addEventListener("click", function(){
     var g=parseInt(document.getElementById("goalInput").value,10);
