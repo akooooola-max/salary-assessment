@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#ffb703">
+<title>いいことポイント</title>
+<style>
+  :root{
+    --bg1:#fff7e6; --bg2:#ffe8f0;
+    --ink:#3a3a3a; --card:#ffffff;
+    --good:#37b24d; --bad:#f03e3e;
+    --shadow:0 6px 18px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:"Hiragino Maru Gothic ProN","Rounded Mplus 1c",-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    text-align:center; padding:18px 12px 6px;
+    position:relative;
+  }
+  header h1{
+    margin:0; font-size:26px; letter-spacing:1px;
+    color:#e8590c; text-shadow:0 2px 0 #fff;
+  }
+  header p{margin:4px 0 0; font-size:13px; color:#8a6d3b;}
+  .lock-btn{
+    position:absolute; right:12px; top:14px;
+    border:none; background:#fff; color:#e8590c;
+    width:46px; height:46px; border-radius:50%;
+    font-size:22px; box-shadow:var(--shadow); cursor:pointer;
+  }
+  .wrap{max-width:820px; margin:0 auto; padding:8px 12px 40px;}
+
+  /* ===== グラフ（見える化）===== */
+  .chart-card{
+    background:var(--card); border-radius:22px; box-shadow:var(--shadow);
+    padding:16px 14px 10px; margin:12px 0 18px;
+  }
+  .chart-title{font-size:15px; font-weight:bold; color:#e8590c; margin:0 0 10px; text-align:center;}
+  .chart{
+    display:flex; align-items:flex-end; justify-content:space-around;
+    gap:10px; height:220px; position:relative; padding-bottom:2px;
+  }
+  .zero-line{
+    position:absolute; left:0; right:0; height:2px; background:#e9ecef; z-index:0;
+  }
+  .bar-col{
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    height:100%; justify-content:flex-end; position:relative; z-index:1;
+  }
+  .bar-num{font-size:20px; font-weight:800; margin-bottom:4px;}
+  .bar-fillwrap{
+    width:60%; max-width:64px; height:100%;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .bar{
+    width:100%; border-radius:12px 12px 0 0;
+    transition:height .5s cubic-bezier(.34,1.56,.64,1);
+    min-height:6px; box-shadow:inset 0 -3px 0 rgba(0,0,0,.06);
+  }
+  .bar.neg{border-radius:0 0 12px 12px; box-shadow:inset 0 3px 0 rgba(0,0,0,.06);}
+  .bar-name{font-size:15px; font-weight:bold; margin-top:8px;}
+  .bar-emoji{font-size:22px;}
+
+  /* ===== 子カード ===== */
+  .kids{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media(max-width:480px){ .kids{grid-template-columns:1fr;} header h1{font-size:22px;} }
+  .kid{
+    border-radius:22px; padding:14px; box-shadow:var(--shadow);
+    position:relative; overflow:hidden;
+  }
+  .kid .top{display:flex; align-items:center; gap:10px;}
+  .avatar{
+    width:48px; height:48px; border-radius:50%; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; font-weight:800; background:rgba(255,255,255,.65);
+  }
+  .kid .kname{font-size:19px; font-weight:800;}
+  .points{font-size:40px; font-weight:900; line-height:1; margin:8px 0 2px;}
+  .points small{font-size:16px; font-weight:700;}
+  .goalbar{height:12px; background:rgba(255,255,255,.55); border-radius:8px; overflow:hidden; margin-top:8px;}
+  .goalbar > i{display:block; height:100%; background:rgba(0,0,0,.18); border-radius:8px; transition:width .5s ease;}
+  .goaltext{font-size:12px; margin-top:5px; font-weight:bold; opacity:.85;}
+
+  /* ママモードの操作ボタン */
+  .kid .ctrl{display:none; gap:8px; margin-top:12px;}
+  body.mom .kid .ctrl{display:flex;}
+  .btn{
+    flex:1; border:none; border-radius:14px; padding:12px 6px;
+    font-size:15px; font-weight:800; color:#fff; cursor:pointer;
+    box-shadow:0 3px 0 rgba(0,0,0,.18); transition:transform .08s;
+  }
+  .btn:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.18);}
+  .btn.good{background:var(--good);}
+  .btn.bad{background:var(--bad);}
+
+  /* ===== ママパネル ===== */
+  .mom-tools{display:none; margin-top:18px;}
+  body.mom .mom-tools{display:block;}
+  .panel{
+    background:var(--card); border-radius:20px; box-shadow:var(--shadow);
+    padding:14px 16px; margin-top:14px;
+  }
+  .panel h3{margin:0 0 10px; font-size:15px; color:#e8590c;}
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .mini{
+    border:none; border-radius:12px; padding:10px 14px; font-weight:800;
+    font-size:14px; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.12);
+  }
+  .mini.g{background:#f8f9fa; color:#495057;}
+  .mini.warn{background:#fff0f0; color:#e03131;}
+  input[type=password],input[type=number]{
+    border:2px solid #ffd8a8; border-radius:12px; padding:10px 12px; font-size:16px;
+    width:130px; outline:none;
+  }
+  .hist{max-height:220px; overflow:auto; margin-top:6px;}
+  .hist-item{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 4px; border-bottom:1px dashed #eee; font-size:13px;
+  }
+  .hist-item .d{font-weight:800;}
+  .hist-item .d.p{color:var(--good);} .hist-item .d.m{color:var(--bad);}
+  .hist-item .undo{border:none; background:#f1f3f5; border-radius:8px; padding:4px 10px; cursor:pointer; font-size:12px;}
+
+  /* ===== モーダル ===== */
+  .modal-bg{
+    position:fixed; inset:0; background:rgba(0,0,0,.45);
+    display:none; align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal-bg.show{display:flex;}
+  .modal{
+    background:#fff; border-radius:20px; padding:22px; width:100%; max-width:320px;
+    box-shadow:0 12px 40px rgba(0,0,0,.3); text-align:center;
+  }
+  .modal h3{margin:0 0 12px; color:#e8590c;}
+  .modal input{width:100%; text-align:center; font-size:22px; letter-spacing:6px; margin-bottom:14px;}
+  .modal .row{justify-content:center;}
+  .modal .mini{padding:11px 18px;}
+  .err{color:#e03131; font-size:13px; min-height:18px; margin:0 0 8px;}
+
+  /* とび出るポイント演出 */
+  .pop{
+    position:fixed; z-index:60; font-size:34px; font-weight:900;
+    pointer-events:none; animation:popup 1s ease forwards;
+  }
+  @keyframes popup{
+    0%{transform:translateY(0) scale(.6); opacity:0;}
+    20%{transform:translateY(-10px) scale(1.15); opacity:1;}
+    100%{transform:translateY(-80px) scale(1); opacity:0;}
+  }
+  .foot{text-align:center; font-size:11px; color:#b0996f; margin-top:24px;}
+  .mode-tag{
+    display:none; text-align:center; font-size:12px; color:#e03131;
+    font-weight:bold; margin:4px 0;
+  }
+  body.mom .mode-tag{display:block;}
+</style>
+</head>
+<body>
+<header>
+  <h1>⭐ いいことポイント ⭐</h1>
+  <p>いいこと +10 ／ ちょっかい −10</p>
+  <button class="lock-btn" id="lockBtn" title="ママモード">🔒</button>
+</header>
+
+<div class="wrap">
+  <div class="mode-tag">👩 ママモード：ポイントをつけたり けしたり できます</div>
+
+  <!-- グラフ -->
+  <div class="chart-card">
+    <p class="chart-title">みんなのポイント くらべ</p>
+    <div class="chart" id="chart"></div>
+  </div>
+
+  <!-- 子カード -->
+  <div class="kids" id="kids"></div>
+
+  <!-- ママ用ツール -->
+  <div class="mom-tools">
+    <div class="panel">
+      <h3>りれき（さいきん）</h3>
+      <div class="hist" id="hist"></div>
+    </div>
+    <div class="panel">
+      <h3>せってい</h3>
+      <div class="row" style="margin-bottom:12px;">
+        <span style="font-size:13px;">ごほうびの目標ポイント：</span>
+        <input type="number" id="goalInput" min="10" step="10">
+        <button class="mini g" id="saveGoal">保存</button>
+      </div>
+      <div class="row" style="margin-bottom:12px;">
+        <button class="mini g" id="changePw">パスワードを変える</button>
+      </div>
+      <div class="row">
+        <button class="mini warn" id="resetAll">ぜんぶ 0 にもどす</button>
+      </div>
+    </div>
+    <div class="panel" style="text-align:center;">
+      <button class="mini g" id="exitMom" style="padding:11px 24px;">🔓 ママモードを おわる</button>
+    </div>
+  </div>
+
+  <p class="foot">データはこのタブレット／スマホの中だけに ほぞんされます</p>
+</div>
+
+<!-- パスワードモーダル -->
+<div class="modal-bg" id="pwModal">
+  <div class="modal">
+    <h3 id="pwTitle">パスワードを いれてね</h3>
+    <p class="err" id="pwErr"></p>
+    <input type="password" id="pwInput" inputmode="numeric" maxlength="12" autocomplete="off">
+    <div class="row">
+      <button class="mini g" id="pwCancel">やめる</button>
+      <button class="mini" id="pwOk" style="background:#ffb703;color:#fff;">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY="kidsPoints_v1";
+
+  var DEFAULT={
+    password:"1111",
+    goal:100,
+    kids:[
+      {id:"rio",   name:"リオ",   emoji:"🦊", bg:"#e7d3b3", ink:"#5b4a2e"},
+      {id:"kanna", name:"カンナ", emoji:"🐬", bg:"#9adcf0", ink:"#0a4a5c"},
+      {id:"miran", name:"ミラン", emoji:"🦄", bg:"#f7a5c6", ink:"#7a2048"},
+      {id:"ao",    name:"アオ",   emoji:"🐳", bg:"#6ea0f0", ink:"#0b2f66"}
+    ],
+    points:{rio:0,kanna:0,miran:0,ao:0},
+    history:[]
+  };
+
+  var state=load();
+
+  function load(){
+    try{
+      var raw=localStorage.getItem(KEY);
+      if(!raw) return clone(DEFAULT);
+      var s=JSON.parse(raw);
+      // 欠けている項目を補完
+      if(!s.password) s.password=DEFAULT.password;
+      if(!s.goal) s.goal=DEFAULT.goal;
+      if(!s.kids) s.kids=clone(DEFAULT.kids);
+      if(!s.points) s.points={};
+      s.kids.forEach(function(k){ if(typeof s.points[k.id]!=="number") s.points[k.id]=0; });
+      if(!s.history) s.history=[];
+      return s;
+    }catch(e){ return clone(DEFAULT); }
+  }
+  function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+  /* ====== 描画 ====== */
+  var kidsEl=document.getElementById("kids");
+  var chartEl=document.getElementById("chart");
+  var histEl=document.getElementById("hist");
+
+  function render(){
+    renderKids();
+    renderChart();
+    renderHist();
+    document.getElementById("goalInput").value=state.goal;
+  }
+
+  function renderKids(){
+    kidsEl.innerHTML="";
+    state.kids.forEach(function(k){
+      var p=state.points[k.id];
+      var pct=Math.max(0,Math.min(100, Math.round(p/state.goal*100)));
+      var remain=Math.max(0, state.goal-p);
+      var card=document.createElement("div");
+      card.className="kid";
+      card.style.background=k.bg;
+      card.style.color=k.ink;
+      card.innerHTML=
+        '<div class="top">'+
+          '<div class="avatar">'+k.emoji+'</div>'+
+          '<div class="kname">'+k.name+'</div>'+
+        '</div>'+
+        '<div class="points" id="pts-'+k.id+'">'+p+'<small> てん</small></div>'+
+        '<div class="goalbar"><i style="width:'+pct+'%"></i></div>'+
+        '<div class="goaltext">'+(p>=state.goal? '🎉 ごほうび ゲット！' : 'ごほうびまで あと '+remain+' てん')+'</div>'+
+        '<div class="ctrl">'+
+          '<button class="btn good" data-add="10" data-id="'+k.id+'">😊 いいこと +10</button>'+
+          '<button class="btn bad"  data-add="-10" data-id="'+k.id+'">😠 ちょっかい −10</button>'+
+        '</div>';
+      kidsEl.appendChild(card);
+    });
+  }
+
+  function renderChart(){
+    chartEl.innerHTML="";
+    var vals=state.kids.map(function(k){ return state.points[k.id]; });
+    var maxAbs=Math.max(10, Math.max.apply(null, vals.map(Math.abs)));
+    var hasNeg=vals.some(function(v){return v<0;});
+    // ゼロ線の位置（負がある時は中央寄り）
+    var line=document.createElement("div");
+    line.className="zero-line";
+    line.style.bottom=(hasNeg? 45 : 22)+"%";
+    chartEl.appendChild(line);
+
+    state.kids.forEach(function(k){
+      var v=state.points[k.id];
+      var col=document.createElement("div");
+      col.className="bar-col";
+      var avail = hasNeg ? 45 : 76;               // ％で使える高さ
+      var h = Math.abs(v)/maxAbs*avail;
+      var bar='<div class="bar'+(v<0?' neg':'')+'" style="height:'+h+'%; background:'+k.bg+'; border:2px solid '+k.ink+'33;"></div>';
+      col.innerHTML=
+        '<div class="bar-num" style="color:'+k.ink+'">'+v+'</div>'+
+        '<div class="bar-fillwrap" style="justify-content:'+(v<0?'flex-start':'flex-end')+'">'+bar+'</div>'+
+        '<div class="bar-emoji">'+k.emoji+'</div>'+
+        '<div class="bar-name" style="color:'+k.ink+'">'+k.name+'</div>';
+      chartEl.appendChild(col);
+    });
+  }
+
+  function nameOf(id){ var k=state.kids.filter(function(x){return x.id===id;})[0]; return k?k.name:id; }
+
+  function renderHist(){
+    histEl.innerHTML="";
+    if(state.history.length===0){ histEl.innerHTML='<p style="font-size:13px;color:#aaa;text-align:center;">まだ ありません</p>'; return; }
+    state.history.slice().reverse().slice(0,40).forEach(function(h){
+      var d=new Date(h.ts);
+      var t=(d.getMonth()+1)+'/'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+      var item=document.createElement("div");
+      item.className="hist-item";
+      item.innerHTML=
+        '<span>'+t+' '+nameOf(h.id)+' '+(h.delta>0?'いいこと':'ちょっかい')+'</span>'+
+        '<span><span class="d '+(h.delta>0?'p':'m')+'">'+(h.delta>0?'+':'')+h.delta+'</span> '+
+        '<button class="undo" data-ts="'+h.ts+'">とりけし</button></span>';
+      histEl.appendChild(item);
+    });
+  }
+
+  /* ====== ポイント操作 ====== */
+  function addPoint(id, delta, evt){
+    state.points[id]=(state.points[id]||0)+delta;
+    state.history.push({ts:Date.now(), id:id, delta:delta});
+    if(state.history.length>500) state.history=state.history.slice(-500);
+    save(); render();
+    popEffect(delta, evt);
+  }
+  function undo(ts){
+    var idx=-1;
+    for(var i=state.history.length-1;i>=0;i--){ if(state.history[i].ts===ts){ idx=i; break; } }
+    if(idx<0) return;
+    var h=state.history[idx];
+    state.points[h.id]=(state.points[h.id]||0)-h.delta;
+    state.history.splice(idx,1);
+    save(); render();
+  }
+  function popEffect(delta, evt){
+    var el=document.createElement("div");
+    el.className="pop";
+    el.textContent=(delta>0?'+':'')+delta;
+    el.style.color=delta>0?'#37b24d':'#f03e3e';
+    var x=window.innerWidth/2, y=window.innerHeight/2;
+    if(evt){ x=evt.clientX; y=evt.clientY; }
+    el.style.left=(x-20)+"px"; el.style.top=(y-30)+"px";
+    document.body.appendChild(el);
+    setTimeout(function(){ el.remove(); },1000);
+  }
+
+  kidsEl.addEventListener("click", function(e){
+    var b=e.target.closest("button[data-add]");
+    if(!b || !document.body.classList.contains("mom")) return;
+    addPoint(b.getAttribute("data-id"), parseInt(b.getAttribute("data-add"),10), e);
+  });
+  histEl.addEventListener("click", function(e){
+    var b=e.target.closest("button.undo");
+    if(b) undo(parseInt(b.getAttribute("data-ts"),10));
+  });
+
+  /* ====== ママモード / パスワード ====== */
+  var pwModal=document.getElementById("pwModal");
+  var pwInput=document.getElementById("pwInput");
+  var pwErr=document.getElementById("pwErr");
+  var pwTitle=document.getElementById("pwTitle");
+  var pwMode="enter"; // enter | new1 | new2
+  var newPwTmp="";
+
+  function openPw(mode){
+    pwMode=mode; pwErr.textContent=""; pwInput.value="";
+    pwTitle.textContent = mode==="enter" ? "パスワードを いれてね"
+      : mode==="new1" ? "あたらしい パスワード"
+      : "もういちど いれてね";
+    pwModal.classList.add("show");
+    setTimeout(function(){ pwInput.focus(); },50);
+  }
+  function closePw(){ pwModal.classList.remove("show"); }
+
+  document.getElementById("lockBtn").addEventListener("click", function(){
+    if(document.body.classList.contains("mom")){ exitMom(); }
+    else { openPw("enter"); }
+  });
+  document.getElementById("pwCancel").addEventListener("click", closePw);
+  document.getElementById("pwOk").addEventListener("click", submitPw);
+  pwInput.addEventListener("keydown", function(e){ if(e.key==="Enter") submitPw(); });
+
+  function submitPw(){
+    var v=pwInput.value.trim();
+    if(pwMode==="enter"){
+      if(v===state.password){ closePw(); enterMom(); }
+      else { pwErr.textContent="ちがうよ。もういちど。"; pwInput.value=""; pwInput.focus(); }
+    } else if(pwMode==="new1"){
+      if(v.length<2){ pwErr.textContent="2もじ いじょう にしてね"; return; }
+      newPwTmp=v; openPw("new2");
+    } else if(pwMode==="new2"){
+      if(v===newPwTmp){ state.password=v; save(); closePw(); toast("パスワードを かえました"); }
+      else { pwErr.textContent="おなじに なりません。さいしょから。"; openPw("new1"); }
+    }
+  }
+
+  function enterMom(){ document.body.classList.add("mom"); render(); window.scrollTo(0,0); }
+  function exitMom(){ document.body.classList.remove("mom"); render(); }
+  document.getElementById("exitMom").addEventListener("click", exitMom);
+  document.getElementById("changePw").addEventListener("click", function(){ openPw("new1"); });
+
+  document.getElementById("saveGoal").addEventListener("click", function(){
+    var g=parseInt(document.getElementById("goalInput").value,10);
+    if(!g || g<10){ toast("10いじょうを いれてね"); return; }
+    state.goal=g; save(); render(); toast("目標を "+g+" にしました");
+  });
+
+  document.getElementById("resetAll").addEventListener("click", function(){
+    if(confirm("ぜんいんのポイントを 0 にもどしますか？（りれきも けします）")){
+      state.kids.forEach(function(k){ state.points[k.id]=0; });
+      state.history=[]; save(); render(); toast("0に もどしました");
+    }
+  });
+
+  /* かんたんトースト */
+  function toast(msg){
+    var t=document.createElement("div");
+    t.textContent=msg;
+    t.style.cssText="position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#333;color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:80;box-shadow:0 4px 12px rgba(0,0,0,.3);";
+    document.body.appendChild(t);
+    setTimeout(function(){ t.style.transition="opacity .4s"; t.style.opacity="0"; },1400);
+    setTimeout(function(){ t.remove(); },1900);
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
