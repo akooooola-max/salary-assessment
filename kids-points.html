@@ -247,7 +247,7 @@
     password:"1111",
     goal:100,
     kids:[
-      {id:"rio",   name:"リオ",   emoji:"🦊", bg:"#e7d3b3", ink:"#5b4a2e"},
+      {id:"rio",   name:"リオ",   emoji:"🐼", bg:"#e7d3b3", ink:"#5b4a2e"},
       {id:"kanna", name:"カンナ", emoji:"🐬", bg:"#9adcf0", ink:"#0a4a5c"},
       {id:"miran", name:"ミラン", emoji:"🦄", bg:"#f7a5c6", ink:"#7a2048"},
       {id:"ao",    name:"アオ",   emoji:"🐳", bg:"#6ea0f0", ink:"#0b2f66"}
@@ -266,8 +266,9 @@
       // 欠けている項目を補完
       if(!s.password) s.password=DEFAULT.password;
       if(!s.goal) s.goal=DEFAULT.goal;
-      if(!s.kids) s.kids=clone(DEFAULT.kids);
       if(!s.points) s.points={};
+      // 名前・絵文字・色は常に最新（コード側）を使う
+      s.kids=clone(DEFAULT.kids);
       s.kids.forEach(function(k){ if(typeof s.points[k.id]!=="number") s.points[k.id]=0; });
       if(!s.history) s.history=[];
       return s;
